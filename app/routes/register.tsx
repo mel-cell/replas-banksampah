@@ -1,63 +1,9 @@
-import React, { useContext, useState } from "react";
-import { LanguageContext } from "../root";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { useTranslation } from "react-i18next";
 import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
-
-// Define translations for Register page
-const translations = {
-  id: {
-    title: "Daftar Akun Replas",
-    subtitle: "Buat akun baru dan mulai perjalanan daur ulang Anda yang menguntungkan.",
-    nameLabel: "Nama Lengkap",
-    emailLabel: "Alamat Email",
-    phoneLabel: "Nomor Telepon",
-    passwordLabel: "Kata Sandi",
-    confirmPasswordLabel: "Konfirmasi Kata Sandi",
-    agreeTerms: "Saya setuju dengan syarat dan ketentuan",
-    createAccount: "Buat Akun",
-    haveAccount: "Sudah punya akun?",
-    login: "Masuk Sekarang",
-    orContinueWith: "Atau daftar dengan",
-    googleRegister: "Daftar dengan Google",
-    facebookRegister: "Daftar dengan Facebook",
-    registerSuccess: "Pendaftaran berhasil! Silakan login.",
-    registerError: "Terjadi kesalahan saat pendaftaran",
-    nameRequired: "Nama wajib diisi",
-    emailRequired: "Email wajib diisi",
-    phoneRequired: "Nomor telepon wajib diisi",
-    passwordRequired: "Kata sandi wajib diisi",
-    passwordsMismatch: "Kata sandi tidak cocok",
-    termsRequired: "Anda harus setuju dengan syarat dan ketentuan",
-    passwordStrength: "Kata sandi harus minimal 8 karakter dengan huruf besar, kecil, dan angka",
-  },
-  en: {
-    title: "Register Replas Account",
-    subtitle: "Create a new account and start your profitable recycling journey.",
-    nameLabel: "Full Name",
-    emailLabel: "Email Address",
-    phoneLabel: "Phone Number",
-    passwordLabel: "Password",
-    confirmPasswordLabel: "Confirm Password",
-    agreeTerms: "I agree to the terms and conditions",
-    createAccount: "Create Account",
-    haveAccount: "Already have an account?",
-    login: "Login Now",
-    orContinueWith: "Or register with",
-    googleRegister: "Register with Google",
-    facebookRegister: "Register with Facebook",
-    registerSuccess: "Registration successful! Please login.",
-    registerError: "Registration error occurred",
-    nameRequired: "Name is required",
-    emailRequired: "Email is required",
-    phoneRequired: "Phone number is required",
-    passwordRequired: "Password is required",
-    passwordsMismatch: "Passwords do not match",
-    termsRequired: "You must agree to the terms and conditions",
-    passwordStrength: "Password must be at least 8 characters with uppercase, lowercase, and numbers",
-  }
-};
 
 export function meta() {
   return [
@@ -67,8 +13,7 @@ export function meta() {
 }
 
 export default function Register() {
-  const { lang } = useContext(LanguageContext);
-  const t = (key: keyof typeof translations['id']) => translations[lang][key] || key;
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -166,10 +111,10 @@ export default function Register() {
         <div className="text-center">
           <img src="/logo_3.webp" alt="Replas Logo" className="mx-auto h-12 w-auto mb-4" />
           <h2 className="text-3xl font-extrabold text-foreground">
-            {t('title')}
+            {t('register.title')}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {t('subtitle')}
+            {t('register.subtitle')}
           </p>
         </div>
 
@@ -177,14 +122,14 @@ export default function Register() {
         <Card className="border-accent">
           <CardHeader>
             <CardTitle className="text-center text-green-600">
-              Buat Akun Baru
+              {t('register.registerFormTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium mb-2">
-                  {t('nameLabel')}
+                  {t('register.nameLabel')}
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -203,7 +148,7 @@ export default function Register() {
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  {t('emailLabel')}
+                  {t('register.emailLabel')}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -222,7 +167,7 @@ export default function Register() {
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  {t('phoneLabel')}
+                  {t('register.phoneLabel')}
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -241,7 +186,7 @@ export default function Register() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium mb-2">
-                  {t('passwordLabel')}
+                  {t('register.passwordLabel')}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -267,7 +212,7 @@ export default function Register() {
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
-                  {t('confirmPasswordLabel')}
+                  {t('register.confirmPasswordLabel')}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -302,7 +247,7 @@ export default function Register() {
                   className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                 />
                 <label htmlFor="agree-terms" className="ml-2 block text-sm text-muted-foreground">
-                  {t('agreeTerms')}
+                  {t('register.agreeTerms')}
                 </label>
               </div>
 
@@ -329,7 +274,7 @@ export default function Register() {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-background text-muted-foreground">
-                    {t('orContinueWith')}
+                    {t('register.orContinueWith')}
                   </span>
                 </div>
               </div>
@@ -337,11 +282,11 @@ export default function Register() {
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button variant="outline" className="w-full">
                   <span className="mr-2">📘</span>
-                  {t('facebookRegister')}
+                  {t('register.facebookRegister')}
                 </Button>
                 <Button variant="outline" className="w-full">
                   <span className="mr-2">🔍</span>
-                  {t('googleRegister')}
+                  {t('register.googleRegister')}
                 </Button>
               </div>
             </div>
@@ -349,9 +294,9 @@ export default function Register() {
             {/* Login Link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                {t('haveAccount')}{' '}
+                {t('register.haveAccount')}{' '}
                 <a href="/login" className="text-green-600 hover:text-green-500 font-medium">
-                  {t('login')}
+                  {t('register.login')}
                 </a>
               </p>
             </div>

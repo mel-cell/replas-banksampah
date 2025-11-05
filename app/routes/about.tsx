@@ -1,48 +1,8 @@
-import React, { useContext } from "react";
-import { LanguageContext } from "../root";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { useTranslation } from "react-i18next";
 import Footer from "../components/footer";
-
-// Define translations for About page
-const translations = {
-  id: {
-    title: "Tentang Replas",
-    subtitle: "Mengenal Lebih Dalam Platform Daur Ulang Inovatif Kami",
-    intro: "Replas adalah platform terdepan yang mengubah cara kita memandang daur ulang. Dengan teknologi canggih dan komitmen terhadap keberlanjutan, kami membantu masyarakat mendapatkan manfaat finansial dari kegiatan daur ulang sehari-hari.",
-    missionTitle: "Misi Kami",
-    missionDesc: "Misi utama Replas adalah menciptakan ekosistem daur ulang yang menguntungkan bagi semua pihak. Kami percaya bahwa keberlanjutan lingkungan dapat berjalan seiring dengan kemajuan ekonomi.",
-    visionTitle: "Visi Kami",
-    visionDesc: "Menjadi pemimpin global dalam transformasi limbah menjadi nilai ekonomi, menciptakan dunia di mana daur ulang adalah bagian integral dari gaya hidup modern.",
-    historyTitle: "Sejarah Kami",
-    historyDesc: "Didirikan pada tahun 2024 oleh tim ahli teknologi dan lingkungan, Replas lahir dari visi untuk mengatasi masalah limbah plastik yang semakin meningkat di Indonesia, khususnya di sekolah-sekolah seperti SMKN 6 Malang.",
-    teamTitle: "Tim Kami",
-    teamDesc: "Tim kami terdiri dari para ahli di bidang teknologi, lingkungan, dan bisnis yang berkomitmen untuk menciptakan solusi inovatif bagi masalah daur ulang.",
-    impactTitle: "Dampak Kami",
-    impactDesc: "Sejak diluncurkan, Replas telah berhasil mengurangi jutaan ton limbah plastik dari lingkungan dan memberikan penghasilan tambahan bagi ribuan pengguna.",
-    futureTitle: "Masa Depan",
-    futureDesc: "Kami terus berinovasi untuk memperluas jangkauan layanan, mengintegrasikan teknologi AI untuk pengenalan material yang lebih akurat, dan memperluas jaringan mesin Replas Bank ke seluruh Indonesia.",
-    ctaButton: "Bergabung Bersama Kami",
-  },
-  en: {
-    title: "About Replas",
-    subtitle: "Get to Know Our Innovative Recycling Platform",
-    intro: "Replas is a leading platform that changes the way we view recycling. With advanced technology and commitment to sustainability, we help communities benefit financially from daily recycling activities.",
-    missionTitle: "Our Mission",
-    missionDesc: "Replas's main mission is to create a recycling ecosystem that benefits all parties. We believe that environmental sustainability can go hand in hand with economic progress.",
-    visionTitle: "Our Vision",
-    visionDesc: "To become a global leader in transforming waste into economic value, creating a world where recycling is an integral part of modern lifestyle.",
-    historyTitle: "Our History",
-    historyDesc: "Founded in 2024 by a team of technology and environmental experts, Replas was born from the vision to address the growing plastic waste problem in Indonesia, especially in schools like SMKN 6 Malang.",
-    teamTitle: "Our Team",
-    teamDesc: "Our team consists of experts in technology, environment, and business who are committed to creating innovative solutions for recycling problems.",
-    impactTitle: "Our Impact",
-    impactDesc: "Since launching, Replas has successfully reduced millions of tons of plastic waste from the environment and provided additional income for thousands of users.",
-    futureTitle: "The Future",
-    futureDesc: "We continue to innovate to expand our service reach, integrate AI technology for more accurate material recognition, and expand the Replas Bank machine network throughout Indonesia.",
-    ctaButton: "Join Us",
-  }
-};
 
 export function meta() {
   return [
@@ -52,8 +12,7 @@ export function meta() {
 }
 
 export default function About() {
-  const { lang } = useContext(LanguageContext);
-  const t = (key: keyof typeof translations['id']) => translations[lang][key] || key;
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -61,10 +20,10 @@ export default function About() {
       <section className="py-20 bg-[#D8EEE6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-extrabold text-foreground mb-6">
-            {t('title')}
+            {t('about.title')}
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {t('subtitle')}
+            {t('about.subtitle')}
           </p>
         </div>
       </section>
@@ -74,7 +33,7 @@ export default function About() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-              {t('intro')}
+              {t('about.intro')}
             </p>
           </div>
         </div>
@@ -86,21 +45,21 @@ export default function About() {
           <div className="grid md:grid-cols-2 gap-12">
             <Card className="border-accent">
               <CardHeader>
-                <CardTitle className="text-2xl text-green-600">{t('missionTitle')}</CardTitle>
+                <CardTitle className="text-2xl text-green-600">{t('about.missionTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base leading-relaxed">
-                  {t('missionDesc')}
+                  {t('about.missionDesc')}
                 </CardDescription>
               </CardContent>
             </Card>
             <Card className="border-accent">
               <CardHeader>
-                <CardTitle className="text-2xl text-green-600">{t('visionTitle')}</CardTitle>
+                <CardTitle className="text-2xl text-green-600">{t('about.visionTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base leading-relaxed">
-                  {t('visionDesc')}
+                  {t('about.visionDesc')}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -113,10 +72,10 @@ export default function About() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl font-extrabold text-center mb-8 text-green-600">
-              {t('historyTitle')}
+              {t('about.historyTitle')}
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              {t('historyDesc')}
+              {t('about.historyDesc')}
             </p>
             <div className="bg-[#D8EEE6] p-8 rounded-lg">
               <h3 className="text-2xl font-bold mb-4">Tahun 2024: Awal Perjalanan</h3>
@@ -132,10 +91,10 @@ export default function About() {
       <section className="py-20 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-extrabold mb-8 text-green-600">
-            {t('teamTitle')}
+            {t('about.teamTitle')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-12">
-            {t('teamDesc')}
+            {t('about.teamDesc')}
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="border-accent">
@@ -187,10 +146,10 @@ export default function About() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl font-extrabold mb-8 text-green-600">
-                {t('impactTitle')}
+                {t('about.impactTitle')}
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-                {t('impactDesc')}
+                {t('about.impactDesc')}
               </p>
               <ul className="space-y-4 text-muted-foreground">
                 <li className="flex items-start">
@@ -218,10 +177,10 @@ export default function About() {
       <section className="py-20 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-extrabold mb-8 text-green-600">
-            {t('futureTitle')}
+            {t('about.futureTitle')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-4xl mx-auto mb-12">
-            {t('futureDesc')}
+            {t('about.futureDesc')}
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="border-accent">
@@ -268,7 +227,7 @@ export default function About() {
             Bergabunglah dengan Replas dan jadilah bagian dari revolusi daur ulang.
           </p>
           <Button className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg text-lg">
-            {t('ctaButton')}
+            {t('about.ctaButton')}
           </Button>
         </div>
       </section>

@@ -1,5 +1,5 @@
-import React, { useContext, useState } from "react";
-import { LanguageContext } from "../root";
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -11,104 +11,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 import Footer from "../components/footer";
-
-// Define translations for Contact page
-const translations = {
-  id: {
-    title: "Hubungi Kami",
-    subtitle: "Kami Siap Membantu Anda",
-    intro:
-      "Ada pertanyaan tentang layanan Replas? Ingin bermitra dengan kami? Atau butuh bantuan teknis? Tim kami siap membantu Anda 24/7. Hubungi kami melalui berbagai kanal yang tersedia.",
-    contactInfoTitle: "Informasi Kontak",
-    addressTitle: "Alamat Kantor Pusat",
-    address: "Jl. Teknologi Hijau No. 123, Malang, Jawa Timur 65145, Indonesia",
-    phoneTitle: "Telepon",
-    phone: "+62 123 456 789",
-    emailTitle: "Email",
-    email: "info@replas.com",
-    hoursTitle: "Jam Operasional",
-    hours:
-      "Senin - Jumat: 08:00 - 17:00 WIB\nSabtu: 09:00 - 15:00 WIB\nMinggu: Tutup",
-    contactFormTitle: "Kirim Pesan",
-    nameLabel: "Nama Lengkap",
-    emailLabel: "Alamat Email",
-    subjectLabel: "Subjek",
-    messageLabel: "Pesan",
-    sendButton: "Kirim Pesan",
-    faqTitle: "Pertanyaan Umum",
-    faq1Question: "Bagaimana cara menggunakan Replas Bank?",
-    faq1Answer:
-      "Unduh aplikasi Replas, daftar akun, temukan mesin terdekat, scan QR code, dan mulai setorkan botol plastik Anda.",
-    faq2Question: "Berapa nilai tukar per botol?",
-    faq2Answer:
-      "Nilai tukar bervariasi tergantung jenis dan kualitas botol. Rata-rata Rp 400-500 per botol PET standar.",
-    faq3Question: "Apakah aman menggunakan layanan Replas?",
-    faq3Answer:
-      "Ya, sangat aman. Kami menggunakan teknologi enkripsi dan autentikasi biometrik untuk melindungi data dan transaksi Anda.",
-    faq4Question: "Bagaimana cara menarik dana dari akun Replas?",
-    faq4Answer:
-      "Dana dapat ditarik ke rekening bank atau dompet digital setelah mencapai minimum penarikan Rp 50.000.",
-    locationsTitle: "Lokasi Replas Bank",
-    location1: "SMKN 6 Malang - Jl. Veteran No. 8, Malang",
-    location2: "Mall Dinoyo City - Jl. Dinoyo No. 123, Malang",
-    location3: "Universitas Brawijaya - Jl. Veteran, Malang",
-    location4: "Bandara Abdul Rachman Saleh - Jl. Pattimura, Malang",
-    partnershipTitle: "Bermitra Dengan Kami",
-    partnershipDesc:
-      "Tertarik menjadi mitra Replas? Kami mencari lokasi strategis untuk menempatkan mesin Replas Bank. Hubungi tim partnership kami untuk diskusi lebih lanjut.",
-    partnershipButton: "Ajukan Partnership",
-    socialTitle: "Ikuti Kami",
-    socialDesc:
-      "Tetap terhubung dengan perkembangan terbaru Replas melalui media sosial kami.",
-  },
-  en: {
-    title: "Contact Us",
-    subtitle: "We're Here to Help",
-    intro:
-      "Have questions about Replas services? Want to partner with us? Or need technical support? Our team is ready to help you 24/7. Contact us through our available channels.",
-    contactInfoTitle: "Contact Information",
-    addressTitle: "Head Office Address",
-    address: "Jl. Teknologi Hijau No. 123, Malang, East Java 65145, Indonesia",
-    phoneTitle: "Phone",
-    phone: "+62 123 456 789",
-    emailTitle: "Email",
-    email: "info@replas.com",
-    hoursTitle: "Operating Hours",
-    hours:
-      "Monday - Friday: 08:00 - 17:00 WIB\nSaturday: 09:00 - 15:00 WIB\nSunday: Closed",
-    contactFormTitle: "Send Message",
-    nameLabel: "Full Name",
-    emailLabel: "Email Address",
-    subjectLabel: "Subject",
-    messageLabel: "Message",
-    sendButton: "Send Message",
-    faqTitle: "Frequently Asked Questions",
-    faq1Question: "How to use Replas Bank?",
-    faq1Answer:
-      "Download the Replas app, create an account, find the nearest machine, scan QR code, and start depositing your plastic bottles.",
-    faq2Question: "What's the exchange value per bottle?",
-    faq2Answer:
-      "Exchange value varies depending on type and quality of bottles. Average Rp 400-500 per standard PET bottle.",
-    faq3Question: "Is it safe to use Replas services?",
-    faq3Answer:
-      "Yes, very safe. We use encryption technology and biometric authentication to protect your data and transactions.",
-    faq4Question: "How to withdraw funds from Replas account?",
-    faq4Answer:
-      "Funds can be withdrawn to bank account or digital wallet after reaching minimum withdrawal of Rp 50,000.",
-    locationsTitle: "Replas Bank Locations",
-    location1: "SMKN 6 Malang - Jl. Veteran No. 8, Malang",
-    location2: "Mall Dinoyo City - Jl. Dinoyo No. 123, Malang",
-    location3: "Universitas Brawijaya - Jl. Veteran, Malang",
-    location4: "Abdul Rachman Saleh Airport - Jl. Pattimura, Malang",
-    partnershipTitle: "Partner With Us",
-    partnershipDesc:
-      "Interested in becoming a Replas partner? We're looking for strategic locations to place Replas Bank machines. Contact our partnership team for further discussion.",
-    partnershipButton: "Apply for Partnership",
-    socialTitle: "Follow Us",
-    socialDesc:
-      "Stay connected with the latest Replas developments through our social media.",
-  },
-};
 
 export function meta() {
   return [
@@ -122,9 +24,7 @@ export function meta() {
 }
 
 export default function Contact() {
-  const { lang } = useContext(LanguageContext);
-  const t = (key: keyof (typeof translations)["id"]) =>
-    translations[lang][key] || key;
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -157,10 +57,10 @@ export default function Contact() {
       <section className="py-20 bg-[#D8EEE6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-extrabold text-foreground mb-6">
-            {t("title")}
+            {t("contact.title")}
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {t("subtitle")}
+            {t("contact.subtitle")}
           </p>
         </div>
       </section>
@@ -170,7 +70,7 @@ export default function Contact() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-              {t("intro")}
+              {t("contact.intro")}
             </p>
           </div>
         </div>
@@ -183,7 +83,7 @@ export default function Contact() {
             {/* Contact Information */}
             <div>
               <h2 className="text-3xl font-extrabold mb-8 text-green-600">
-                {t("contactInfoTitle")}
+                {t("contact.contactInfoTitle")}
               </h2>
               <div className="space-y-6">
                 <Card className="border-accent">
@@ -191,13 +91,13 @@ export default function Contact() {
                     <div className="flex items-center">
                       <MapPin className="w-6 h-6 text-green-600 mr-3" />
                       <CardTitle className="text-lg">
-                        {t("addressTitle")}
+                        {t("contact.addressTitle")}
                       </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      {t("address")}
+                      {t("contact.address")}
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -207,13 +107,13 @@ export default function Contact() {
                     <div className="flex items-center">
                       <Phone className="w-6 h-6 text-green-600 mr-3" />
                       <CardTitle className="text-lg">
-                        {t("phoneTitle")}
+                        {t("contact.phoneTitle")}
                       </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      {t("phone")}
+                      {t("contact.phone")}
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -223,13 +123,13 @@ export default function Contact() {
                     <div className="flex items-center">
                       <Mail className="w-6 h-6 text-green-600 mr-3" />
                       <CardTitle className="text-lg">
-                        {t("emailTitle")}
+                        {t("contact.emailTitle")}
                       </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      {t("email")}
+                      {t("contact.email")}
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -239,13 +139,13 @@ export default function Contact() {
                     <div className="flex items-center">
                       <Clock className="w-6 h-6 text-green-600 mr-3" />
                       <CardTitle className="text-lg">
-                        {t("hoursTitle")}
+                        {t("contact.hoursTitle")}
                       </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base whitespace-pre-line">
-                      {t("hours")}
+                      {t("contact.hours")}
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -255,7 +155,7 @@ export default function Contact() {
             {/* Contact Form */}
             <div>
               <h2 className="text-3xl font-extrabold mb-8 text-green-600">
-                {t("contactFormTitle")}
+                {t("contact.contactFormTitle")}
               </h2>
               <Card className="border-accent">
                 <CardContent className="pt-6">
@@ -265,7 +165,7 @@ export default function Contact() {
                         htmlFor="name"
                         className="block text-sm font-medium mb-2"
                       >
-                        {t("nameLabel")}
+                        {t("contact.nameLabel")}
                       </label>
                       <Input
                         id="name"
@@ -282,7 +182,7 @@ export default function Contact() {
                         htmlFor="email"
                         className="block text-sm font-medium mb-2"
                       >
-                        {t("emailLabel")}
+                        {t("contact.emailLabel")}
                       </label>
                       <Input
                         id="email"
@@ -299,7 +199,7 @@ export default function Contact() {
                         htmlFor="subject"
                         className="block text-sm font-medium mb-2"
                       >
-                        {t("subjectLabel")}
+                        {t("contact.subjectLabel")}
                       </label>
                       <Input
                         id="subject"
@@ -316,7 +216,7 @@ export default function Contact() {
                         htmlFor="message"
                         className="block text-sm font-medium mb-2"
                       >
-                        {t("messageLabel")}
+                        {t("contact.messageLabel")}
                       </label>
                       <textarea
                         id="message"
@@ -333,7 +233,7 @@ export default function Contact() {
                       className="w-full bg-green-500 hover:bg-green-600 text-white"
                     >
                       <Send className="w-4 h-4 mr-2" />
-                      {t("sendButton")}
+                      {t("contact.sendButton")}
                     </Button>
                   </form>
                 </CardContent>

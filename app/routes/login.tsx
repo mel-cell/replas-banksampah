@@ -1,49 +1,9 @@
-import React, { useContext, useState } from "react";
-import { LanguageContext } from "../root";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-
-// Define translations for Login page
-const translations = {
-  id: {
-    title: "Masuk ke Akun Replas",
-    subtitle: "Selamat datang kembali! Masuk untuk melanjutkan perjalanan daur ulang Anda.",
-    emailLabel: "Alamat Email",
-    passwordLabel: "Kata Sandi",
-    rememberMe: "Ingat saya",
-    forgotPassword: "Lupa kata sandi?",
-    loginButton: "Masuk",
-    noAccount: "Belum punya akun?",
-    signUp: "Daftar Sekarang",
-    orContinueWith: "Atau lanjutkan dengan",
-    googleLogin: "Masuk dengan Google",
-    facebookLogin: "Masuk dengan Facebook",
-    loginSuccess: "Login berhasil!",
-    loginError: "Email atau kata sandi salah",
-    emailRequired: "Email wajib diisi",
-    passwordRequired: "Kata sandi wajib diisi",
-  },
-  en: {
-    title: "Login to Replas Account",
-    subtitle: "Welcome back! Login to continue your recycling journey.",
-    emailLabel: "Email Address",
-    passwordLabel: "Password",
-    rememberMe: "Remember me",
-    forgotPassword: "Forgot password?",
-    loginButton: "Login",
-    noAccount: "Don't have an account?",
-    signUp: "Sign Up Now",
-    orContinueWith: "Or continue with",
-    googleLogin: "Login with Google",
-    facebookLogin: "Login with Facebook",
-    loginSuccess: "Login successful!",
-    loginError: "Invalid email or password",
-    emailRequired: "Email is required",
-    passwordRequired: "Password is required",
-  }
-};
+import { useTranslation } from "react-i18next";
 
 export function meta() {
   return [
@@ -53,8 +13,7 @@ export function meta() {
 }
 
 export default function Login() {
-  const { lang } = useContext(LanguageContext);
-  const t = (key: keyof typeof translations['id']) => translations[lang][key] || key;
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -80,12 +39,12 @@ export default function Login() {
 
     // Basic validation
     if (!formData.email) {
-      setMessage(t('emailRequired'));
+      setMessage(t('login.emailRequired'));
       setIsLoading(false);
       return;
     }
     if (!formData.password) {
-      setMessage(t('passwordRequired'));
+      setMessage(t('login.passwordRequired'));
       setIsLoading(false);
       return;
     }
@@ -95,12 +54,12 @@ export default function Login() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       // In real app, this would be an API call
       if (formData.email === 'demo@replas.com' && formData.password === 'password') {
-        setMessage(t('loginSuccess'));
+        setMessage(t('login.loginSuccess'));
       } else {
-        setMessage(t('loginError'));
+        setMessage(t('login.loginError'));
       }
     } catch (error) {
-      setMessage(t('loginError'));
+      setMessage(t('login.loginError'));
     } finally {
       setIsLoading(false);
     }
@@ -113,10 +72,10 @@ export default function Login() {
         <div className="text-center">
           <img src="/logo_3.webp" alt="Replas Logo" className="mx-auto h-12 w-auto mb-4" />
           <h2 className="text-3xl font-extrabold text-foreground">
-            {t('title')}
+            {t('login.title')}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {t('subtitle')}
+            {t('login.subtitle')}
           </p>
         </div>
 
@@ -124,14 +83,14 @@ export default function Login() {
         <Card className="border-accent">
           <CardHeader>
             <CardTitle className="text-center text-green-600">
-              Masuk ke Akun Anda
+              {t('login.loginFormTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  {t('emailLabel')}
+                  {t('login.emailLabel')}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -150,7 +109,7 @@ export default function Login() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium mb-2">
-                  {t('passwordLabel')}
+                  {t('login.passwordLabel')}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -185,19 +144,19 @@ export default function Login() {
                     className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
-                    {t('rememberMe')}
+                    {t('login.rememberMe')}
                   </label>
                 </div>
 
                 <div className="text-sm">
                   <a href="#" className="text-green-600 hover:text-green-500">
-                    {t('forgotPassword')}
+                    {t('login.forgotPassword')}
                   </a>
                 </div>
               </div>
 
               {message && (
-                <div className={`text-sm text-center ${message.includes('berhasil') ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-sm text-center ${message === t('login.loginSuccess') ? 'text-green-600' : 'text-red-600'}`}>
                   {message}
                 </div>
               )}
@@ -207,7 +166,7 @@ export default function Login() {
                 disabled={isLoading}
                 className="w-full bg-green-500 hover:bg-green-600 text-white"
               >
-                {isLoading ? 'Memproses...' : t('loginButton')}
+                {isLoading ? t('login.processing') : t('login.loginButton')}
               </Button>
             </form>
 
@@ -219,7 +178,7 @@ export default function Login() {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-background text-muted-foreground">
-                    {t('orContinueWith')}
+                    {t('login.orContinueWith')}
                   </span>
                 </div>
               </div>
@@ -227,11 +186,11 @@ export default function Login() {
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button variant="outline" className="w-full">
                   <span className="mr-2">📘</span>
-                  {t('facebookLogin')}
+                  {t('login.facebookLogin')}
                 </Button>
                 <Button variant="outline" className="w-full">
                   <span className="mr-2">🔍</span>
-                  {t('googleLogin')}
+                  {t('login.googleLogin')}
                 </Button>
               </div>
             </div>
@@ -239,9 +198,9 @@ export default function Login() {
             {/* Sign Up Link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                {t('noAccount')}{' '}
+                {t('login.noAccount')}{' '}
                 <a href="/register" className="text-green-600 hover:text-green-500 font-medium">
-                  {t('signUp')}
+                  {t('login.signUp')}
                 </a>
               </p>
             </div>
