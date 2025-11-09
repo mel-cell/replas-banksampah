@@ -1,0 +1,31 @@
+{
+  "name": "replas-banksampah",
+  "scripts": {
+    "server": "bun run --hot server/index.ts",
+    "client": "cd client && bun run dev",
+    "dev": "concurrently \"bun run --hot server/index.ts\" \"cd client && bun run dev\"",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.5.2",
+    "@scalar/api-reference": "^1.39.3",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "concurrently": "^9.2.1",
+    "drizzle-orm": "^0.44.7",
+    "hono": "^4.10.4",
+    "jsonwebtoken": "^9.0.2",
+    "mqtt": "^5.14.1",
+    "pg": "^8.16.3",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.15.6",
+    "drizzle-kit": "^0.31.6"
+  }
+}
