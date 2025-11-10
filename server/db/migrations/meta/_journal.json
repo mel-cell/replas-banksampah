@@ -36,6 +36,20 @@
       "when": 1762612557732,
       "tag": "0004_brainy_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762787179265,
+      "tag": "0005_numerous_khan",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762788080779,
+      "tag": "0006_late_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Users,
   Search,
@@ -13,20 +13,26 @@ import {
   MapPin,
   Award,
   Activity,
+  Loader2,
+  UserCheck,
 } from "lucide-react";
 
 interface User {
   id: string;
-  name: string;
+  username: string;
+  fullname: string;
   email: string;
   phone: string;
-  status: "active" | "inactive" | "suspended";
   role: "user" | "admin";
-  joinDate: string;
-  lastActive: string;
+  isActive: boolean;
   location: string;
-  points: number;
-  totalDeposits: number;
+  nisn: string;
+  studentClass: string;
+  school: string;
+  lastActive: string;
+  createdAt: string;
+  pointsBalance: number;
+  totalBottles: number;
 }
 
 export default function ManageUsers() {
@@ -39,92 +45,66 @@ export default function ManageUsers() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState({
-    name: "",
+    fullname: "",
     email: "",
     phone: "",
     role: "user" as User["role"],
-    status: "active" as User["status"],
+    isActive: true,
   });
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 10;
 
-  // Sample user data
-  const users: User[] = [
-    {
-      id: "1",
-      name: "Ahmad Surya",
-      email: "ahmad.surya@email.com",
-      phone: "+62 812-3456-7890",
-      status: "active",
-      role: "user",
-      joinDate: "2024-01-15",
-      lastActive: "2024-01-20",
-      location: "Jakarta",
-      points: 1250,
-      totalDeposits: 45.5,
-    },
-    {
-      id: "2",
-      name: "Siti Rahayu",
-      email: "siti.rahayu@email.com",
-      phone: "+62 811-2345-6789",
-      status: "active",
-      role: "user",
-      joinDate: "2024-01-10",
-      lastActive: "2024-01-19",
-      location: "Bandung",
-      points: 890,
-      totalDeposits: 32.2,
-    },
-    {
-      id: "3",
-      name: "Budi Santoso",
-      email: "budi.santoso@email.com",
-      phone: "+62 813-4567-8901",
-      status: "inactive",
-      role: "user",
-      joinDate: "2023-12-05",
-      lastActive: "2024-01-15",
-      location: "Surabaya",
-      points: 567,
-      totalDeposits: 18.7,
-    },
-    {
-      id: "4",
-      name: "Maya Sari",
-      email: "maya.sari@email.com",
-      phone: "+62 814-5678-9012",
-      status: "active",
-      role: "user",
-      joinDate: "2024-01-08",
-      lastActive: "2024-01-20",
-      location: "Yogyakarta",
-      points: 1456,
-      totalDeposits: 52.3,
-    },
-    {
-      id: "5",
-      name: "Rudi Hartono",
-      email: "rudi.hartono@email.com",
-      phone: "+62 815-6789-0123",
-      status: "suspended",
-      role: "user",
-      joinDate: "2023-11-20",
-      lastActive: "2024-01-10",
-      location: "Semarang",
-      points: 234,
-      totalDeposits: 8.9,
-    },
-  ];
+  // Load users data
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      } else {
+        setError('Failed to load users');
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   // Filter and search users
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone.includes(searchTerm);
+        user.phone?.includes(searchTerm) ||
+        user.username.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus =
-        statusFilter === "all" || user.status === statusFilter;
+        statusFilter === "all" ||
+        (statusFilter === "active" && user.isActive) ||
+        (statusFilter === "inactive" && !user.isActive);
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
 
       return matchesSearch && matchesStatus && matchesRole;
@@ -138,26 +118,62 @@ export default function ManageUsers() {
     currentPage * itemsPerPage
   );
 
-  const handleStatusChange = (userId: string, newStatus: User["status"]) => {
-    // In real app, this would make an API call
-    console.log(`Changing status of user ${userId} to ${newStatus}`);
+  const handleStatusChange = async (userId: string, newStatus: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/users/${userId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isActive: newStatus }),
+      });
+
+      if (response.ok) {
+        // Reload users
+        await loadUsers();
+        alert(newStatus ? 'User diaktifkan' : 'User dinonaktifkan');
+      } else {
+        alert('Failed to update status');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus user ini?")) {
-      // In real app, this would make an API call
-      console.log(`Deleting user ${userId}`);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          alert("User berhasil dihapus!");
+          await loadUsers(); // Reload users
+        } else {
+          alert("Failed to delete user");
+        }
+      } catch (err) {
+        alert("Network error. Please try again.");
+      }
     }
   };
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
     setEditFormData({
-      name: user.name,
+      fullname: user.fullname,
       email: user.email,
-      phone: user.phone,
+      phone: user.phone || "",
       role: user.role,
-      status: user.status,
+      isActive: user.isActive,
     });
     setShowEditModal(true);
   };
@@ -167,14 +183,31 @@ export default function ManageUsers() {
     setShowUserModal(true);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
-      // In real app, this would make an API call
-      console.log(`Updating user ${editingUser.id}`, editFormData);
-      alert("User berhasil diupdate!");
-      setShowEditModal(false);
-      setEditingUser(null);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/users/${editingUser.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editFormData),
+        });
+
+        if (response.ok) {
+          alert("User berhasil diupdate!");
+          setShowEditModal(false);
+          setEditingUser(null);
+          await loadUsers(); // Reload users
+        } else {
+          alert("Failed to update user");
+        }
+      } catch (err) {
+        alert("Network error. Please try again.");
+      }
     }
   };
 
@@ -193,7 +226,7 @@ export default function ManageUsers() {
     }
   };
 
-  const getStatusBadge = (status: User["status"]) => {
+  const getStatusBadge = (isActive: boolean) => {
     const statusConfig = {
       active: {
         color:
@@ -205,12 +238,8 @@ export default function ManageUsers() {
           "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
         label: "Tidak Aktif",
       },
-      suspended: {
-        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-        label: "Ditangguhkan",
-      },
     };
-    return statusConfig[status];
+    return isActive ? statusConfig.active : statusConfig.inactive;
   };
 
   const getRoleBadge = (role: User["role"]) => {
@@ -270,7 +299,7 @@ export default function ManageUsers() {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {
                   users.filter(
-                    (u) => new Date(u.joinDate) > new Date("2024-01-01")
+                    (u) => new Date(u.createdAt) > new Date("2024-01-01")
                   ).length
                 }
               </p>
@@ -282,10 +311,10 @@ export default function ManageUsers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Total Konversi
+                Total Botol
               </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {users.reduce((sum, u) => sum + u.totalDeposits, 0)}
+                {users.reduce((sum, u) => sum + u.totalBottles, 0)}
               </p>
             </div>
             <Activity className="w-8 h-8 text-emerald-600" />
@@ -320,7 +349,6 @@ export default function ManageUsers() {
                 <option value="all">Semua Status</option>
                 <option value="active">Aktif</option>
                 <option value="inactive">Tidak Aktif</option>
-                <option value="suspended">Ditangguhkan</option>
               </select>
             </div>
 
@@ -338,34 +366,58 @@ export default function ManageUsers() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 animate-in slide-in-from-bottom-4 duration-500 delay-300">
+          <div className="flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600 dark:text-gray-400">Memuat data user...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 animate-in slide-in-from-bottom-4 duration-500 delay-300">
+          <p className="text-red-800 dark:text-red-400">{error}</p>
+          <button
+            onClick={loadUsers}
+            className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      )}
+
       {/* Users Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-4 duration-500 delay-300">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Kontak
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Poin
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Bergabung
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedUsers.map((user) => (
+      {!isLoading && !error && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-4 duration-500 delay-300">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Kontak
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Poin
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Bergabung
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {paginatedUsers.map((user) => (
                 <tr
                   key={user.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -375,20 +427,20 @@ export default function ManageUsers() {
                       <div className="flex-shrink-0 h-10 w-10">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
                           <span className="text-white font-medium text-sm">
-                            {user.name
+                            {user.fullname
                               .split(" ")
-                              .map((n) => n[0])
+                              .map((n: string) => n[0])
                               .join("")}
                           </span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.name}
+                          {user.fullname}
                         </div>
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           <MapPin className="w-3 h-3" />
-                          {user.location}
+                          {user.location || 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -406,9 +458,9 @@ export default function ManageUsers() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(user.status).color}`}
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(user.isActive).color}`}
                       >
-                        {getStatusBadge(user.status).label}
+                        {getStatusBadge(user.isActive).label}
                       </span>
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadge(user.role).color}`}
@@ -420,16 +472,16 @@ export default function ManageUsers() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     <div className="flex items-center gap-1">
                       <Award className="w-4 h-4 text-emerald-600" />
-                      {user.points.toLocaleString()}
+                      {user.pointsBalance.toLocaleString()}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {user.totalDeposits} kg sampah
+                      {user.totalBottles} botol
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {new Date(user.joinDate).toLocaleDateString("id-ID")}
+                      {new Date(user.createdAt).toLocaleDateString("id-ID")}
                     </div>
                     <div className="text-xs">
                       <Activity className="w-3 h-3 inline mr-1" />
@@ -459,102 +511,111 @@ export default function ManageUsers() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      {user.status !== "suspended" && (
+                      {user.isActive ? (
                         <button
-                          onClick={() => handleSuspendUser(user.id)}
+                          onClick={() => handleStatusChange(user.id, false)}
                           className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 p-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-                          title="Tangguhkan User"
+                          title="Nonaktifkan User"
                         >
                           <UserX className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleStatusChange(user.id, true)}
+                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                          title="Aktifkan User"
+                        >
+                          <UserCheck className="w-4 h-4" />
                         </button>
                       )}
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Menampilkan{" "}
-                  <span className="font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{" "}
-                  sampai{" "}
-                  <span className="font-medium">
-                    {Math.min(currentPage * itemsPerPage, filteredUsers.length)}
-                  </span>{" "}
-                  dari{" "}
-                  <span className="font-medium">{filteredUsers.length}</span>{" "}
-                  hasil
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    ‹
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum =
-                      Math.max(1, Math.min(totalPages - 4, currentPage - 2)) +
-                      i;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          pageNum === currentPage
-                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    ›
-                  </button>
-                </nav>
-              </div>
-            </div>
+                  ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Menampilkan{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * itemsPerPage + 1}
+                    </span>{" "}
+                    sampai{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * itemsPerPage, filteredUsers.length)}
+                    </span>{" "}
+                    dari{" "}
+                    <span className="font-medium">{filteredUsers.length}</span>{" "}
+                    hasil
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ‹
+                    </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum =
+                        Math.max(1, Math.min(totalPages - 4, currentPage - 2)) +
+                        i;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            pageNum === currentPage
+                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() =>
+                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ›
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* User Detail Modal */}
       {showUserModal && selectedUser && (
@@ -576,15 +637,15 @@ export default function ManageUsers() {
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
                   <span className="text-white font-medium text-lg">
-                    {selectedUser.name
+                    {selectedUser.fullname
                       .split(" ")
-                      .map((n) => n[0])
+                      .map((n: string) => n[0])
                       .join("")}
                   </span>
                 </div>
                 <div>
                   <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                    {selectedUser.name}
+                    {selectedUser.fullname}
                   </h4>
                   <p className="text-gray-600 dark:text-gray-400">
                     {selectedUser.email}
@@ -598,9 +659,9 @@ export default function ManageUsers() {
                     Status
                   </p>
                   <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(selectedUser.status).color}`}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(selectedUser.isActive).color}`}
                   >
-                    {getStatusBadge(selectedUser.status).label}
+                    {getStatusBadge(selectedUser.isActive).label}
                   </span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
@@ -638,7 +699,7 @@ export default function ManageUsers() {
                   <Calendar className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-900 dark:text-white">
                     Bergabung{" "}
-                    {new Date(selectedUser.joinDate).toLocaleDateString(
+                    {new Date(selectedUser.createdAt).toLocaleDateString(
                       "id-ID"
                     )}
                   </span>
@@ -652,8 +713,8 @@ export default function ManageUsers() {
                 <div className="flex items-center gap-2">
                   <Award className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-900 dark:text-white">
-                    {selectedUser.points.toLocaleString()} poin (
-                    {selectedUser.totalDeposits} kg sampah)
+                    {selectedUser.pointsBalance.toLocaleString()} poin (
+                    {selectedUser.totalBottles} botol)
                   </span>
                 </div>
               </div>
@@ -703,8 +764,8 @@ export default function ManageUsers() {
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={editFormData.name}
+                  name="fullname"
+                  value={editFormData.fullname}
                   onChange={handleEditFormChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -754,20 +815,17 @@ export default function ManageUsers() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={editFormData.isActive}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  User Aktif
                 </label>
-                <select
-                  name="status"
-                  value={editFormData.status}
-                  onChange={handleEditFormChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="active">Aktif</option>
-                  <option value="inactive">Tidak Aktif</option>
-                  <option value="suspended">Ditangguhkan</option>
-                </select>
               </div>
 
               <div className="flex gap-3 pt-4">
