@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -34,13 +34,15 @@ interface ActivityItem {
 export default function AdminProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<AdminProfile>({
-    id: "ADM001",
-    name: "Ahmad Surya",
-    email: "ahmad.surya@banksampah.com",
-    phone: "+62 812-3456-7890",
-    role: "Super Admin",
-    joinDate: "2023-01-15",
+    id: "",
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
+    joinDate: "",
   });
 
   const [formData, setFormData] = useState({
@@ -61,32 +63,7 @@ export default function AdminProfile() {
     systemUpdates: true,
   });
 
-  const recentActivities: ActivityItem[] = [
-    {
-      id: "1",
-      action: "Login ke sistem",
-      timestamp: "2024-01-15 09:30:00",
-      details: "Login berhasil dari browser Chrome",
-    },
-    {
-      id: "2",
-      action: "Update data penjualan",
-      timestamp: "2024-01-15 08:45:00",
-      details: "Menambahkan 5 transaksi penjualan baru",
-    },
-    {
-      id: "3",
-      action: "Export laporan",
-      timestamp: "2024-01-14 16:20:00",
-      details: "Export laporan penjualan bulan Januari ke PDF",
-    },
-    {
-      id: "4",
-      action: "Update profil",
-      timestamp: "2024-01-14 14:10:00",
-      details: "Mengubah informasi kontak",
-    },
-  ];
+  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -105,27 +82,80 @@ export default function AdminProfile() {
     setNotifications((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileData((prev) => ({
-      ...prev,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-    }));
-    setIsEditing(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullname: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const data = await response.json();
+      setProfileData((prev) => ({
+        ...prev,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      }));
+      setIsEditing(false);
+      alert('Profil berhasil diperbarui!');
+    } catch (err) {
+      console.error('Profile update error:', err);
+      alert('Gagal memperbarui profil. Silakan coba lagi.');
+    }
   };
 
-  const handleSavePassword = (e: React.FormEvent) => {
+  const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In real app, this would make an API call
-    alert("Password berhasil diubah!");
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-    setShowPasswordModal(false);
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("Password baru dan konfirmasi password tidak cocok!");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/profile/password', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update password');
+      }
+
+      alert("Password berhasil diubah!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setShowPasswordModal(false);
+    } catch (err) {
+      console.error('Password update error:', err);
+      alert('Gagal mengubah password. Silakan coba lagi.');
+    }
   };
 
   const handleEdit = () => {
@@ -136,6 +166,62 @@ export default function AdminProfile() {
     });
     setIsEditing(true);
   };
+
+  // Fetch admin profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/web/dashboard/admin/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+
+        const data = await response.json();
+        setProfileData({
+          id: data.profile.id,
+          name: data.profile.fullname,
+          email: data.profile.email,
+          phone: data.profile.phone || '',
+          role: data.profile.role === 'admin' ? 'Admin' : 'Super Admin',
+          joinDate: data.profile.createdAt,
+        });
+      } catch (err) {
+        setError('Failed to load profile data');
+        console.error('Profile fetch error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="text-red-600 text-lg font-semibold mb-2">Error</div>
+          <div className="text-gray-600">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in-0 duration-500">

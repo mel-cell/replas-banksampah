@@ -20,12 +20,11 @@ export default function AdminDashboardIndex() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("today");
 
-  // Sample data - in real app, this would come from API
-  const stats = [
+  const [stats, setStats] = useState([
     {
       title: "Total Users",
-      value: "1,234",
-      change: "+12%",
+      value: "0",
+      change: "+0%",
       changeType: "positive",
       icon: Users,
       color: "text-blue-600",
@@ -34,8 +33,8 @@ export default function AdminDashboardIndex() {
     },
     {
       title: "Total Konversi",
-      value: "280 X",
-      change: "+18%",
+      value: "0",
+      change: "+0%",
       changeType: "positive",
       icon: Recycle,
       color: "text-green-600",
@@ -44,20 +43,70 @@ export default function AdminDashboardIndex() {
     },
     {
       title: "Revenue Today",
-      value: "Rp 2.4M",
-      change: "+15%",
+      value: "Rp 0",
+      change: "+0%",
       changeType: "positive",
       icon: DollarSign,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
       description: "Pendapatan hari ini",
     },
-  ];
+  ]);
+
+  const [activities, setActivities] = useState([]);
+
+  const loadDashboardData = async () => {
+    try {
+      setIsLoading(true);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/web/dashboard/admin', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Update stats
+        setStats(prevStats => prevStats.map(stat => {
+          if (stat.title === "Total Users") {
+            return { ...stat, value: data.stats.totalUsers?.toLocaleString() || "0" };
+          }
+          if (stat.title === "Total Konversi") {
+            return { ...stat, value: data.stats.totalConversions?.toLocaleString() || "0" };
+          }
+          if (stat.title === "Revenue Today") {
+            return { ...stat, value: `Rp ${(data.stats.revenueToday || 0).toLocaleString()}` };
+          }
+          return stat;
+        }));
+
+        // Update activities
+        setActivities(data.activities || []);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1000);
+    loadDashboardData();
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in-0 duration-500">
@@ -161,71 +210,39 @@ export default function AdminDashboardIndex() {
         </h3>
 
         <div className="space-y-4">
-          {[
-            {
-              id: "1",
-              user: "Ahmad Surya",
-              action: "Menukarkan botol",
-              details: "Botol plastik 25 botol - Poin: +250",
-              timestamp: "2024-01-15 14:30:00",
-              type: "conversion",
-            },
-            {
-              id: "2",
-              user: "Siti Rahayu",
-              action: "Login ke sistem",
-              details: "Login berhasil dari aplikasi mobile",
-              timestamp: "2024-01-15 14:25:00",
-              type: "login",
-            },
-            {
-              id: "3",
-              user: "Budi Santoso",
-              action: "Menukarkan botol",
-              details: "Botol plastik 15 botol - Poin: +150",
-              timestamp: "2024-01-15 14:20:00",
-              type: "conversion",
-            },
-            {
-              id: "4",
-              user: "Maya Sari",
-              action: "Login ke sistem",
-              details: "Login berhasil dari browser Chrome",
-              timestamp: "2024-01-15 14:15:00",
-              type: "login",
-            },
-            {
-              id: "5",
-              user: "Rudi Hartono",
-              action: "Menukarkan botol",
-              details: "Botol plastik 10 botol - Poin: +100",
-              timestamp: "2024-01-15 14:10:00",
-              type: "conversion",
-            },
-          ].map((activity, index) => (
-            <div
-              key={activity.id}
-              className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  <span className="font-semibold">{activity.user}</span> -{" "}
-                  {activity.action}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {activity.details}
-                </p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                  <Clock className="w-3 h-3" />
-                  {new Date(activity.timestamp).toLocaleString("id-ID")}
+          {activities.length === 0 ? (
+            <div className="text-center py-8">
+              <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">
+                Belum ada aktivitas terbaru
+              </p>
+            </div>
+          ) : (
+            activities.map((activity: any, index: number) => (
+              <div
+                key={activity.id}
+                className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="font-semibold">{activity.user}</span> -{" "}
+                    {activity.action}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {activity.details}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                    <Clock className="w-3 h-3" />
+                    {new Date(activity.timestamp).toLocaleString("id-ID")}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

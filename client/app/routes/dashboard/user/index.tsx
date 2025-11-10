@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -12,50 +12,52 @@ import {
   Award,
   TrendingUp,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 
 interface StudentProfile {
   id: string;
-  name: string;
+  fullname: string;
   email: string;
   phone: string;
   nisn: string;
-  class: string;
+  studentClass: string;
   school: string;
-  joinDate: string;
+  createdAt: string;
   totalPoints: number;
-  totalTransactions: number;
-  avatar?: string;
+  totalBottles: number;
+}
+
+interface WalletData {
+  pointsBalance: number;
+  totalBottles: number;
 }
 
 interface TransactionItem {
   id: string;
   type: string;
-  timestamp: string;
+  date: string;
   details: string;
   points: number;
+}
+
+interface DashboardData {
+  profile: StudentProfile;
+  wallet: WalletData;
+  history: TransactionItem[];
 }
 
 export default function StudentProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [profileData, setProfileData] = useState<StudentProfile>({
-    id: "STD001",
-    name: "Syifa Nur",
-    email: "syifa@example.com",
-    phone: "+62 812-3456-7890",
-    nisn: "1234567890",
-    class: "XII IPA 1",
-    school: "SMA Negeri 1 Jakarta",
-    joinDate: "2023-08-15",
-    totalPoints: 1250,
-    totalTransactions: 45,
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
   const [formData, setFormData] = useState({
-    name: profileData.name,
-    email: profileData.email,
-    phone: profileData.phone,
+    name: "",
+    email: "",
+    phone: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -69,6 +71,60 @@ export default function StudentProfile() {
     smsNotifications: false,
     achievementUpdates: true,
   });
+
+  // Load dashboard data on component mount
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/web/dashboard/user', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+
+        // Set form data for editing
+        setFormData({
+          name: data.profile.fullname || "",
+          email: data.profile.email || "",
+          phone: data.profile.phone || "",
+        });
+      } else if (response.status === 401) {
+        // Token expired, redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to load dashboard data');
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const profileData = dashboardData?.profile;
+  const walletData = dashboardData?.wallet;
+  const historyData = dashboardData?.history || [];
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -87,37 +143,139 @@ export default function StudentProfile() {
     setNotifications((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileData((prev) => ({
-      ...prev,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-    }));
-    setIsEditing(false);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/web/dashboard/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullname: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        }),
+      });
+
+      if (response.ok) {
+        // Reload dashboard data
+        await loadDashboardData();
+        setIsEditing(false);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to update profile');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
   };
 
-  const handleSavePassword = (e: React.FormEvent) => {
+  const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In real app, this would make an API call
-    alert("Password berhasil diubah!");
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-    setShowPasswordModal(false);
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("Password baru dan konfirmasi password tidak cocok!");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/web/dashboard/user/profile/password', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update password');
+      }
+
+      alert("Password berhasil diubah!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setShowPasswordModal(false);
+    } catch (err) {
+      console.error('Password update error:', err);
+      alert('Gagal mengubah password. Silakan coba lagi.');
+    }
   };
 
   const handleEdit = () => {
-    setFormData({
-      name: profileData.name,
-      email: profileData.email,
-      phone: profileData.phone,
-    });
+    if (profileData) {
+      setFormData({
+        name: profileData.fullname || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+      });
+    }
     setIsEditing(true);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Memuat data dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="p-4 bg-red-100 dark:bg-red-900/30 rounded-lg mb-4">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+          <button
+            onClick={loadDashboardData}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!dashboardData) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400">Tidak ada data tersedia</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in-0 duration-500">
@@ -161,7 +319,7 @@ export default function StudentProfile() {
                     Nama Lengkap
                   </label>
                   <p className="text-gray-900 dark:text-white font-medium">
-                    {profileData.name}
+                    {profileData?.fullname || 'N/A'}
                   </p>
                 </div>
                 <div>
@@ -169,7 +327,7 @@ export default function StudentProfile() {
                     Email
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {profileData.email}
+                    {profileData?.email || 'N/A'}
                   </p>
                 </div>
                 <div>
@@ -177,7 +335,7 @@ export default function StudentProfile() {
                     NISN
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {profileData.nisn}
+                    {profileData?.nisn || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -187,7 +345,7 @@ export default function StudentProfile() {
                     Nomor Telepon
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {profileData.phone}
+                    {profileData?.phone || 'N/A'}
                   </p>
                 </div>
                 <div>
@@ -197,7 +355,7 @@ export default function StudentProfile() {
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-blue-600" />
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {profileData.class}
+                      {profileData?.studentClass || 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -206,7 +364,7 @@ export default function StudentProfile() {
                     Sekolah
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {profileData.school}
+                    {profileData?.school || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -216,7 +374,7 @@ export default function StudentProfile() {
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
                 Bergabung sejak:{" "}
-                {new Date(profileData.joinDate).toLocaleDateString("id-ID")}
+                {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString("id-ID") : 'N/A'}
               </div>
             </div>
           </div>
@@ -234,7 +392,7 @@ export default function StudentProfile() {
                 Total Poin
               </h3>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
-                {profileData.totalPoints.toLocaleString()}
+                {walletData?.pointsBalance?.toLocaleString() || '0'}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 poin terkumpul
@@ -249,13 +407,13 @@ export default function StudentProfile() {
                 <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Total Konversi
+                Total Botol
               </h3>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                {profileData.totalTransactions}
+                {walletData?.totalBottles?.toLocaleString() || '0'}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                kali menukar sampah
+                botol disetor
               </p>
             </div>
           </div>

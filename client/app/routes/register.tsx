@@ -74,6 +74,7 @@ export default function Register() {
       return;
     }
 
+    // Real registration API call
     try {
       const response = await fetch('http://localhost:3000/api/auth/register', {
         method: 'POST',
@@ -83,13 +84,20 @@ export default function Register() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          password: formData.password,
           phone: formData.phone,
+          password: formData.password,
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        // Store JWT token and user data
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         setMessage(t('registerSuccess'));
+
         // Reset form
         setFormData({
           name: '',
@@ -99,13 +107,13 @@ export default function Register() {
           confirmPassword: '',
           agreeTerms: false
         });
-        // Redirect to login
+
+        // Redirect to dashboard after success
         setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
+          window.location.href = '/dashboard/user';
+        }, 1000);
       } else {
-        const error = await response.json();
-        setMessage(error.message || t('registerError'));
+        setMessage(data.error || t('registerError'));
       }
     } catch (error) {
       setMessage(t('registerError'));

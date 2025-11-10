@@ -56,6 +56,7 @@ authRoutes.post("/register", async (c) => {
         fullname: name,
         email,
         phone,
+        school: "SMKN 6 Malang",
         role: "user",
         isActive: true,
       })

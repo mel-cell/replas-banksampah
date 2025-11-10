@@ -50,6 +50,7 @@ export default function Login() {
       return;
     }
 
+    // Real login API call
     try {
       const response = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
@@ -62,29 +63,25 @@ export default function Login() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        setMessage(t('login.loginSuccess'));
-        // Store token
+        // Store JWT token and user data
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
 
-        // Check for redirect URL first
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirect = urlParams.get('redirect');
+        setMessage(t('login.loginSuccess'));
 
-        if (redirect) {
-          window.location.href = redirect;
-        } else {
-          // Redirect based on role
+        // Redirect to dashboard after success
+        setTimeout(() => {
           if (data.user.role === 'admin') {
             window.location.href = '/dashboard/admin';
           } else {
             window.location.href = '/dashboard/user';
           }
-        }
+        }, 1000);
       } else {
-        const error = await response.json();
-        setMessage(error.message || t('login.loginError'));
+        setMessage(data.error || t('login.loginError'));
       }
     } catch (error) {
       setMessage(t('login.loginError'));

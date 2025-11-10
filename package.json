@@ -12,6 +12,7 @@
   "dependencies": {
     "@hono/swagger-ui": "^0.5.2",
     "@scalar/api-reference": "^1.39.3",
+    "Replas-Banksampah": ".",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "concurrently": "^9.2.1",

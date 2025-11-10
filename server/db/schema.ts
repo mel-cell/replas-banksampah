@@ -29,6 +29,11 @@ export const requestStatus = pgEnum("request_status", [
   "paid",
 ]);
 export const transactionType = pgEnum("transaction_type", ["credit", "debit"]);
+export const machineStatus = pgEnum("machine_status", [
+  "idle",
+  "in_use",
+  "maintenance",
+]);
 
 // Users Table
 export const users = pgTable(
@@ -41,12 +46,21 @@ export const users = pgTable(
     fullname: varchar("fullname", { length: 150 }),
     email: varchar("email", { length: 150 }).notNull().unique(),
     phone: varchar("phone", { length: 20 }),
+    location: varchar("location", { length: 255 }),
+    // Student-specific fields
+    nisn: varchar("nisn", { length: 20 }),
+    studentClass: varchar("student_class", { length: 50 }),
+    school: varchar("school", { length: 150 }),
+    lastActive: timestamp("last_active"),
     isActive: boolean("is_active").default(true),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => ({
     emailIdx: index("idx_users_email").on(table.email),
     roleIdx: index("idx_users_role").on(table.role),
+    nisnIdx: index("idx_users_nisn").on(table.nisn),
+    locationIdx: index("idx_users_location").on(table.location),
+    lastActiveIdx: index("idx_users_last_active").on(table.lastActive),
   })
 );
 
@@ -61,12 +75,20 @@ export const rooms = pgTable(
     supervisorId: uuid("supervisor_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    // Operational status (admin can disable broken machines)
     isActive: boolean("is_active").default(true),
+    // Session status (real-time machine state)
+    status: machineStatus("status").default("idle").notNull(),
+    // Who currently has the machine locked
+    currentUserId: uuid("current_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => ({
     supervisorIdx: index("idx_rooms_supervisor").on(table.supervisorId),
     codeIdx: index("idx_rooms_code").on(table.code),
+    statusIdx: index("idx_rooms_status").on(table.status),
   })
 );
 
@@ -98,6 +120,7 @@ export const wallets = pgTable(
       .unique()
       .references(() => users.id, { onDelete: "cascade" }),
     pointsBalance: integer("points_balance").default(0),
+    totalBottles: integer("total_bottles").default(0), // Total botol yang sudah disetor
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
@@ -175,7 +198,7 @@ export const walletTransactions = pgTable(
       .references(() => wallets.id, { onDelete: "cascade" }),
     changeAmount: integer("change_amount").notNull(),
     type: transactionType("type").notNull(),
-    refId: integer("ref_id"),
+    refId: uuid("ref_id"), // Fixed: was integer, now uuid to match other table IDs
     refTable: varchar("ref_table", { length: 50 }),
     description: text("description"),
     balanceAfter: integer("balance_after").notNull(),
@@ -209,6 +232,30 @@ export const laporanPenjualan = pgTable(
   (table) => ({
     dateIdx: index("idx_laporan_penjualan_date").on(table.saleDate),
     adminIdx: index("idx_laporan_penjualan_admin").on(table.adminId),
+  })
+);
+
+// Session Logs Table (for temporary MQTT bottle detection data)
+export const sessionLogs = pgTable(
+  "session_logs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    machineId: uuid("machine_id")
+      .notNull()
+      .references(() => rooms.id, {
+        onDelete: "cascade",
+      }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    machineIdx: index("idx_session_logs_machine").on(table.machineId),
+    userIdx: index("idx_session_logs_user").on(table.userId),
+    dateIdx: index("idx_session_logs_date").on(table.createdAt),
   })
 );
 

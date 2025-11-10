@@ -20,203 +20,178 @@ import {
   Trash2,
   X,
   Save,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
-interface SalesData {
+interface SalesReport {
   id: string;
-  date: string;
-  wasteType: string;
-  quantity: number;
-  unit: string;
-  pricePerUnit: number;
-  totalRevenue: number;
-  customerName: string;
-  collectorName: string;
-  status: "completed" | "pending" | "cancelled";
+  saleDate: string;
+  totalBottles: number;
+  totalAmount: string;
+  adminId: string;
+  notes: string;
+  createdAt: string;
+  adminName: string;
 }
 
 export default function LaporanPenjualanSampah() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState("month");
-  const [selectedWasteType, setSelectedWasteType] = useState("all");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<SalesData | null>(null);
+  const [reports, setReports] = useState<SalesReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<SalesReport | null>(null);
   const [formData, setFormData] = useState({
-    date: "",
-    wasteType: "",
-    quantity: "",
-    pricePerUnit: "",
-    customerName: "",
-    collectorName: "",
-    status: "pending",
-  });
-  const [salesData, setSalesData] = useState<SalesData[]>([
-    {
-      id: "S001",
-      date: "2024-01-15",
-      wasteType: "Plastik",
-      quantity: 25.5,
-      unit: "kg",
-      pricePerUnit: 2000,
-      totalRevenue: 51000,
-      customerName: "Ahmad Surya",
-      collectorName: "Budi Santoso",
-      status: "completed",
-    },
-    {
-      id: "S002",
-      date: "2024-01-15",
-      wasteType: "Kertas",
-      quantity: 18.2,
-      unit: "kg",
-      pricePerUnit: 1500,
-      totalRevenue: 27300,
-      customerName: "Siti Rahayu",
-      collectorName: "Maya Lestari",
-      status: "completed",
-    },
-    {
-      id: "S003",
-      date: "2024-01-14",
-      wasteType: "Logam",
-      quantity: 12.8,
-      unit: "kg",
-      pricePerUnit: 8000,
-      totalRevenue: 102400,
-      customerName: "Budi Kusuma",
-      collectorName: "Ahmad Surya",
-      status: "completed",
-    },
-    {
-      id: "S004",
-      date: "2024-01-14",
-      wasteType: "Plastik",
-      quantity: 32.1,
-      unit: "kg",
-      pricePerUnit: 2000,
-      totalRevenue: 64200,
-      customerName: "Maya Lestari",
-      collectorName: "Siti Rahayu",
-      status: "pending",
-    },
-    {
-      id: "S005",
-      date: "2024-01-13",
-      wasteType: "Kaca",
-      quantity: 15.6,
-      unit: "kg",
-      pricePerUnit: 500,
-      totalRevenue: 7800,
-      customerName: "Rudi Hartono",
-      collectorName: "Budi Santoso",
-      status: "completed",
-    },
-  ]);
-
-  const wasteTypes = [
-    { value: "all", label: "Semua Jenis" },
-    { value: "Plastik", label: "Plastik" },
-    { value: "Kertas", label: "Kertas" },
-    { value: "Logam", label: "Logam" },
-    { value: "Kaca", label: "Kaca" },
-    { value: "Organik", label: "Organik" },
-  ];
-
-  const filteredData = salesData.filter((item) => {
-    if (selectedWasteType === "all") return true;
-    return item.wasteType === selectedWasteType;
+    saleDate: new Date().toISOString().split('T')[0],
+    totalBottles: '',
+    totalAmount: '',
+    notes: '',
   });
 
-  const totalRevenue = filteredData.reduce(
-    (sum, item) => sum + item.totalRevenue,
-    0
-  );
-  const totalQuantity = filteredData.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
-  const completedTransactions = filteredData.filter(
-    (item) => item.status === "completed"
-  ).length;
+  const loadReports = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/sales-reports', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-  const getStatusConfig = (status: SalesData["status"]) => {
-    const configs = {
-      completed: {
-        color:
-          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        label: "Selesai",
-      },
-      pending: {
-        color:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-        label: "Pending",
-      },
-      cancelled: {
-        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-        label: "Dibatalkan",
-      },
-    };
-    return configs[status];
-  };
-
-  const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1000);
-  };
-
-  const handleAddSale = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newSale: SalesData = {
-      id: `S${String(salesData.length + 1).padStart(3, "0")}`,
-      date: formData.date,
-      wasteType: formData.wasteType,
-      quantity: parseFloat(formData.quantity),
-      unit: "kg",
-      pricePerUnit: parseInt(formData.pricePerUnit),
-      totalRevenue:
-        parseFloat(formData.quantity) * parseInt(formData.pricePerUnit),
-      customerName: formData.customerName,
-      collectorName: formData.collectorName,
-      status: formData.status as SalesData["status"],
-    };
-    setSalesData([...salesData, newSale]);
-    setFormData({
-      date: "",
-      wasteType: "",
-      quantity: "",
-      pricePerUnit: "",
-      customerName: "",
-      collectorName: "",
-      status: "pending",
-    });
-    setShowAddModal(false);
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleEdit = (item: SalesData) => {
-    setEditingItem(item);
-    setFormData({
-      date: item.date,
-      wasteType: item.wasteType,
-      quantity: item.quantity.toString(),
-      pricePerUnit: item.pricePerUnit.toString(),
-      customerName: item.customerName,
-      collectorName: item.collectorName,
-      status: item.status,
-    });
-    setShowAddModal(true);
-  };
-
-  const handleDelete = (id: string) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus penjualan ini?")) {
-      setSalesData(salesData.filter((item) => item.id !== id));
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data.reports);
+      } else {
+        setError('Failed to load sales reports');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const totalRevenue = reports.reduce((sum, report) => sum + parseFloat(report.totalAmount), 0);
+  const totalBottles = reports.reduce((sum, report) => sum + report.totalBottles, 0);
+
+  const handleCreateReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/sales-reports', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          saleDate: formData.saleDate,
+          totalBottles: parseInt(formData.totalBottles),
+          totalAmount: parseFloat(formData.totalAmount),
+          notes: formData.notes,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Laporan penjualan berhasil dibuat!');
+        setShowCreateModal(false);
+        setFormData({
+          saleDate: new Date().toISOString().split('T')[0],
+          totalBottles: '',
+          totalAmount: '',
+          notes: '',
+        });
+        await loadReports();
+      } else {
+        alert('Failed to create sales report');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
+  };
+
+  const handleEditReport = (report: SalesReport) => {
+    setSelectedReport(report);
+    setFormData({
+      saleDate: new Date(report.saleDate).toISOString().split('T')[0],
+      totalBottles: report.totalBottles.toString(),
+      totalAmount: report.totalAmount,
+      notes: report.notes || '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReport) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/sales-reports/${selectedReport.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          saleDate: formData.saleDate,
+          totalBottles: parseInt(formData.totalBottles),
+          totalAmount: parseFloat(formData.totalAmount),
+          notes: formData.notes,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Laporan penjualan berhasil diupdate!');
+        setShowEditModal(false);
+        setSelectedReport(null);
+        await loadReports();
+      } else {
+        alert('Failed to update sales report');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus laporan penjualan ini?')) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/sales-reports/${reportId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          alert('Laporan penjualan berhasil dihapus!');
+          await loadReports();
+        } else {
+          alert('Failed to delete sales report');
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      }
+    }
+  };
+
+  const handleViewReport = (report: SalesReport) => {
+    setSelectedReport(report);
+    setShowViewModal(true);
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -240,7 +215,7 @@ export default function LaporanPenjualanSampah() {
             Last updated: {new Date().toLocaleTimeString("id-ID")}
           </div>
           <button
-            onClick={handleRefresh}
+            onClick={loadReports}
             className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             disabled={isLoading}
           >
@@ -254,41 +229,18 @@ export default function LaporanPenjualanSampah() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between animate-in slide-in-from-bottom-4 duration-500 delay-100">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            >
-              <option value="today">Hari Ini</option>
-              <option value="week">Minggu Ini</option>
-              <option value="month">Bulan Ini</option>
-              <option value="year">Tahun Ini</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <select
-              value={selectedWasteType}
-              onChange={(e) => setSelectedWasteType(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            >
-              {wasteTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Calendar className="w-4 h-4" />
+            Periode: Semua Waktu
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
-            Tambah Penjualan
+            Tambah Laporan
           </button>
         </div>
       </div>
@@ -324,10 +276,10 @@ export default function LaporanPenjualanSampah() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Total Berat Sampah
+                Total Botol Terjual
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                Yang berhasil dijual
+                Dari semua laporan
               </p>
             </div>
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 transition-transform hover:scale-110">
@@ -336,7 +288,7 @@ export default function LaporanPenjualanSampah() {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {totalQuantity.toFixed(1)} kg
+              {totalBottles.toLocaleString()}
             </p>
             <p className="text-sm mt-2 flex items-center gap-1 text-green-600">
               <TrendingUp className="w-3 h-3" />
@@ -349,10 +301,10 @@ export default function LaporanPenjualanSampah() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Transaksi Selesai
+                Jumlah Laporan
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                Penjualan yang berhasil
+                Total laporan penjualan
               </p>
             </div>
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 transition-transform hover:scale-110">
@@ -361,7 +313,7 @@ export default function LaporanPenjualanSampah() {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {completedTransactions}
+              {reports.length}
             </p>
             <p className="text-sm mt-2 flex items-center gap-1 text-green-600">
               <TrendingUp className="w-3 h-3" />
@@ -382,13 +334,7 @@ export default function LaporanPenjualanSampah() {
             </h3>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar className="w-4 h-4" />
-              {selectedPeriod === "today"
-                ? "Hari Ini"
-                : selectedPeriod === "week"
-                  ? "Minggu Ini"
-                  : selectedPeriod === "month"
-                    ? "Bulan Ini"
-                    : "Tahun Ini"}
+              Semua Waktu
             </div>
           </div>
           <div className="h-64 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
@@ -438,10 +384,10 @@ export default function LaporanPenjualanSampah() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Package className="w-5 h-5 text-emerald-600" />
-              Detail Penjualan
+              Detail Laporan Penjualan
             </h3>
             <div className="text-sm text-gray-500">
-              Menampilkan {filteredData.length} transaksi
+              Menampilkan {reports.length} laporan
             </div>
           </div>
         </div>
@@ -453,25 +399,13 @@ export default function LaporanPenjualanSampah() {
                   Tanggal
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Jenis Sampah
+                  Botol
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Berat
+                  Pendapatan
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Harga/kg
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Pelanggan
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Kolektor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Status
+                  Admin
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Aksi
@@ -479,207 +413,141 @@ export default function LaporanPenjualanSampah() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredData.map((item, index) => {
-                const statusConfig = getStatusConfig(item.status);
-                return (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(item.date).toLocaleDateString("id-ID")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {item.wasteType}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {item.quantity} {item.unit}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      Rp {item.pricePerUnit.toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      Rp {item.totalRevenue.toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {item.customerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {item.collectorName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig.color}`}
+              {reports.map((report) => (
+                <tr
+                  key={report.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    {new Date(report.saleDate).toLocaleDateString('id-ID')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    {report.totalBottles.toLocaleString()} botol
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    Rp {parseFloat(report.totalAmount).toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {report.adminName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleViewReport(report)}
+                        className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        title="Lihat Detail"
                       >
-                        {statusConfig.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEditReport(report)}
+                        className="p-1 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReport(report.id)}
+                        className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                        title="Hapus"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-        {filteredData.length === 0 && (
+        {reports.length === 0 && (
           <div className="text-center py-12">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
-              Tidak ada data penjualan untuk filter yang dipilih
+              Tidak ada data laporan penjualan
             </p>
           </div>
         )}
       </div>
 
-      {/* Add/Edit Modal */}
-      {showAddModal && (
+      {/* Create Modal */}
+      {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Plus className="w-5 h-5 text-emerald-600" />
-                  Tambah Penjualan Baru
+                  Tambah Laporan Penjualan
                 </h3>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setShowCreateModal(false)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
-            <form onSubmit={handleAddSale} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tanggal
-                  </label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Jenis Sampah
-                  </label>
-                  <select
-                    name="wasteType"
-                    value={formData.wasteType}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  >
-                    <option value="">Pilih Jenis</option>
-                    {wasteTypes
-                      .filter((type) => type.value !== "all")
-                      .map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Berat (kg)
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleInputChange}
-                    step="0.1"
-                    min="0"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Harga/kg (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    name="pricePerUnit"
-                    value={formData.pricePerUnit}
-                    onChange={handleInputChange}
-                    min="0"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+            <form onSubmit={handleCreateReport} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nama Pelanggan
+                  Tanggal Penjualan
                 </label>
                 <input
-                  type="text"
-                  name="customerName"
-                  value={formData.customerName}
-                  onChange={handleInputChange}
+                  type="date"
+                  name="saleDate"
+                  value={formData.saleDate}
+                  onChange={handleFormChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nama Kolektor
+                  Total Botol
                 </label>
                 <input
-                  type="text"
-                  name="collectorName"
-                  value={formData.collectorName}
-                  onChange={handleInputChange}
+                  type="number"
+                  name="totalBottles"
+                  value={formData.totalBottles}
+                  onChange={handleFormChange}
+                  min="0"
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
+                  Total Pendapatan (Rp)
                 </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
+                <input
+                  type="number"
+                  name="totalAmount"
+                  value={formData.totalAmount}
+                  onChange={handleFormChange}
+                  min="0"
+                  step="0.01"
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="completed">Selesai</option>
-                  <option value="cancelled">Dibatalkan</option>
-                </select>
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Catatan
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleFormChange}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  placeholder="Catatan tambahan (opsional)"
+                />
               </div>
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   Batal
@@ -693,6 +561,177 @@ export default function LaporanPenjualanSampah() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-emerald-600" />
+                  Edit Laporan Penjualan
+                </h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <form onSubmit={handleUpdateReport} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Tanggal Penjualan
+                </label>
+                <input
+                  type="date"
+                  name="saleDate"
+                  value={formData.saleDate}
+                  onChange={handleFormChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Total Botol
+                </label>
+                <input
+                  type="number"
+                  name="totalBottles"
+                  value={formData.totalBottles}
+                  onChange={handleFormChange}
+                  min="0"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Total Pendapatan (Rp)
+                </label>
+                <input
+                  type="number"
+                  name="totalAmount"
+                  value={formData.totalAmount}
+                  onChange={handleFormChange}
+                  min="0"
+                  step="0.01"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Catatan
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleFormChange}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  placeholder="Catatan tambahan (opsional)"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {showViewModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-emerald-600" />
+                  Detail Laporan Penjualan
+                </h3>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Tanggal Penjualan
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {new Date(selectedReport.saleDate).toLocaleDateString('id-ID')}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Admin
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {selectedReport.adminName}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Total Botol
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {selectedReport.totalBottles.toLocaleString()} botol
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Total Pendapatan
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    Rp {parseFloat(selectedReport.totalAmount).toLocaleString('id-ID')}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Catatan
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {selectedReport.notes || 'Tidak ada catatan'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Dibuat Pada
+                </label>
+                <p className="text-sm text-gray-500">
+                  {new Date(selectedReport.createdAt).toLocaleString('id-ID')}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
