@@ -14,11 +14,14 @@ const pool = new Pool({
 const app = new Hono();
 
 app.use("/*", cors({
-  origin: ["http://localhost:3004", "http://103.144.209.103:3004"],
+  origin: ["http://localhost:5173", "http://103.144.209.103:5173", "http://localhost:3004", "http://103.144.209.103:3004"],
   credentials: true,
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
 }));
+
+// Allow all origins for development
+app.use("/*", cors());
 
 // Mount auth routes
 app.route("/api/auth", authRoutes);

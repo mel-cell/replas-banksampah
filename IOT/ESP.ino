@@ -26,7 +26,11 @@ Servo myServo;
 // State variables
 bool isSessionActive = false;     // Session aktif dari server
 bool isMoving = false;            // Flag: motor sedang bergerak
-bool sensorTriggered = false;     // Flag: sensor sudah trigger
+int triggerCount = 0;
+unsigned long lastDetectionTime = 0;  // Untuk debounce
+unsigned long sessionStartTime = 0;   // Waktu mulai session
+unsigned long lastActivityTime = 0;   // Waktu aktivitas terakhir
+const unsigned long SESSION_TIMEOUT = 15 * 60 * 1000; // 15 menit timeout
 int triggerCount = 0;
 unsigned long lastDetectionTime = 0;  // Untuk debounce
 
@@ -79,6 +83,7 @@ void loop() {
       isMoving = true;
       triggerCount++;
       lastDetectionTime = millis();
+      lastActivityTime = millis();  // Update waktu aktivitas terakhir
       
       Serial.println("\n=== BOTOL TERDETEKSI ===");
       Serial.print("Deteksi ke-");

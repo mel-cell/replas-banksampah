@@ -13,6 +13,9 @@ const pool = new Pool({
 const db = drizzle(pool, { schema });
 const iot = new Hono<{ Variables: { session: any } }>();
 
+// Store active session timeouts
+const activeTimeouts = new Map<string, NodeJS.Timeout>();
+
 // Middleware to get session
 iot.use("*", authMiddleware, async (c, next) => {
   // JWT payload is available in c.get("jwtPayload")
@@ -36,7 +39,7 @@ iot.post("/activate", async (c) => {
   const activeSession = await db
     .select()
     .from(schema.bottleCollections)
-    .where(eq(schema.bottleCollections.userId, payload.userId))
+    .where(eq(schema.bottleCollections.userId, payload.userId.toString()))
     .orderBy(schema.bottleCollections.createdAt)
     .limit(1);
 
@@ -119,12 +122,22 @@ iot.post("/activate", async (c) => {
     );
   }
 
+  // Set auto-timeout for 15 minutes
+  const timeoutId = setTimeout(async () => {
+    console.log(`Auto-ending session for user ${payload.userId} in room ${machineId}`);
+    await autoEndSession(bottleCollection[0].id.toString(), machineId, payload.userId);
+    activeTimeouts.delete(bottleCollection[0].id.toString());
+  }, 15 * 60 * 1000); // 15 minutes
+
+  activeTimeouts.set(bottleCollection[0].id.toString(), timeoutId);
+
   return c.json({
     success: true,
     machine: machine[0],
     sessionId: bottleCollection[0].id,
     activatedAt: new Date().toISOString(),
     mqttConnected: true,
+    autoTimeoutMinutes: 15,
   });
 });
 
@@ -132,6 +145,27 @@ iot.post("/activate", async (c) => {
 iot.post("/session-end", async (c) => {
   const payload = c.get("jwtPayload");
   const { machineId, totalBottles } = await c.req.json();
+
+  // Clear any existing timeout for this session
+  const activeCollection = await db
+    .select()
+    .from(schema.bottleCollections)
+    .where(
+      and(
+        eq(schema.bottleCollections.userId, payload.userId.toString()),
+        eq(schema.bottleCollections.verified, false)
+      )
+    )
+    .orderBy(schema.bottleCollections.createdAt)
+    .limit(1);
+
+  if (activeCollection.length > 0) {
+    const timeoutId = activeTimeouts.get(activeCollection[0].id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      activeTimeouts.delete(activeCollection[0].id);
+    }
+  }
 
   // Get user
   const [user] = await db
@@ -156,7 +190,7 @@ iot.post("/session-end", async (c) => {
   const [wallet] = await db
     .select()
     .from(schema.wallets)
-    .where(eq(schema.wallets.userId, user.id))
+    .where(eq(schema.wallets.userId, user.id.toString()))
     .limit(1);
 
   const newBalance = (wallet?.pointsBalance || 0) + points;
@@ -165,7 +199,7 @@ iot.post("/session-end", async (c) => {
   await db
     .update(schema.wallets)
     .set({ pointsBalance: newBalance, updatedAt: new Date() })
-    .where(eq(schema.wallets.userId, user.id));
+    .where(eq(schema.wallets.userId, user.id.toString()));
 
   // Record wallet transaction
   const walletId =
@@ -179,7 +213,7 @@ iot.post("/session-end", async (c) => {
     walletId: walletId,
     changeAmount: points,
     type: "credit",
-    refId: machine.id, 
+    refId: machine.id,
     refTable: "rooms",
     description: `Bottle collection at room ${machine.code}`,
     balanceAfter: newBalance,
@@ -200,7 +234,7 @@ iot.post("/session-end", async (c) => {
   // Reactivate machine
   await db
     .update(schema.rooms)
-    .set({ isActive: true })
+    .set({ isActive: true, currentUserId: null, status: "idle" })
     .where(eq(schema.rooms.id, machine.id));
 
   // Send MQTT command to end session
@@ -222,6 +256,109 @@ iot.post("/session-end", async (c) => {
     endedAt: new Date().toISOString(),
   });
 });
+
+// Auto-end session function
+async function autoEndSession(sessionId: string, machineId: string, userId: number) {
+  try {
+    console.log(`Auto-ending session ${sessionId} for user ${userId} in room ${machineId}`);
+
+    // Get the active collection
+    const [activeCollection] = await db
+      .select()
+      .from(schema.bottleCollections)
+      .where(
+        and(
+          eq(schema.bottleCollections.id, sessionId),
+          eq(schema.bottleCollections.verified, false)
+        )
+      )
+      .limit(1);
+
+    if (!activeCollection) {
+      console.log(`No active collection found for session ${sessionId}`);
+      return;
+    }
+
+    // Get user and machine
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.id, userId.toString()))
+      .limit(1);
+
+    const [machine] = await db
+      .select()
+      .from(schema.rooms)
+      .where(eq(schema.rooms.id, activeCollection.roomId))
+      .limit(1);
+
+    if (!user || !machine) return;
+
+    // Calculate final points
+    const totalBottles = activeCollection.totalBottles;
+    const points = totalBottles * 10;
+
+    // Update wallet
+    const [wallet] = await db
+      .select()
+      .from(schema.wallets)
+      .where(eq(schema.wallets.userId, user.id.toString()))
+      .limit(1);
+
+    const newBalance = (wallet?.pointsBalance || 0) + points;
+
+    if (wallet) {
+      await db
+        .update(schema.wallets)
+        .set({ pointsBalance: newBalance, updatedAt: new Date() })
+        .where(eq(schema.wallets.userId, user.id.toString()));
+
+      // Record transaction
+      await db.insert(schema.walletTransactions).values({
+        walletId: wallet.id,
+        changeAmount: points,
+        type: "credit",
+        refId: machine.id,
+        refTable: "rooms",
+        description: `Auto-ended session at room ${machine.code}`,
+        balanceAfter: newBalance,
+      });
+    }
+
+    // Update bottle collection as completed
+    await db
+      .update(schema.bottleCollections)
+      .set({
+        verified: true,
+        verifiedBy: user.id,
+        verifiedAt: new Date(),
+        notes: `Auto-ended due to 15-minute timeout at ${new Date().toISOString()}`,
+      })
+      .where(eq(schema.bottleCollections.id, sessionId));
+
+    // Reactivate machine
+    await db
+      .update(schema.rooms)
+      .set({ isActive: true, currentUserId: null, status: "idle" })
+      .where(eq(schema.rooms.id, machine.id));
+
+    // Send MQTT command to end session
+    await mqttService.publish(
+      `machines/${machineId}/end`,
+      JSON.stringify({
+        userId,
+        totalBottles,
+        points,
+        timestamp: new Date().toISOString(),
+        reason: "auto_timeout"
+      })
+    );
+
+    console.log(`Session auto-ended for ${machineId}, awarded ${points} points to user ${userId}`);
+  } catch (error) {
+    console.error("Auto-end session error:", error);
+  }
+}
 
 iot.get("/machine/:code/bottle-count", async (c) => {
   const { code } = c.req.param();

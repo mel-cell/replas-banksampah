@@ -683,4 +683,153 @@ web.delete("/dashboard/admin/sales-reports/:id", async (c) => {
   }
 });
 
+// Get All Rooms (Admin)
+web.get("/dashboard/admin/rooms", async (c) => {
+  const payload = c.get("jwtPayload");
+
+  // Check if user is admin
+  const user = await db.select().from(schema.users).where(eq(schema.users.id, payload.userId)).limit(1);
+  if (user.length === 0 || user[0].role !== 'admin') {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  const rooms = await db.select({
+    id: schema.rooms.id,
+    code: schema.rooms.code,
+    name: schema.rooms.name,
+    location: schema.rooms.location,
+    status: schema.rooms.status,
+    isActive: schema.rooms.isActive,
+    currentUserId: schema.rooms.currentUserId,
+    createdAt: schema.rooms.createdAt,
+  })
+  .from(schema.rooms)
+  .orderBy(schema.rooms.createdAt);
+
+  // Get current users for rooms that are in use
+  const roomsWithUsers = await Promise.all(
+    rooms.map(async (room) => {
+      let currentUser = null;
+      if (room.currentUserId) {
+        const user = await db.select({
+          name: schema.users.fullname,
+          activity: sql`'Menggunakan mesin'`,
+          startTime: sql`NOW()::time`,
+        })
+        .from(schema.users)
+        .where(eq(schema.users.id, room.currentUserId))
+        .limit(1);
+
+        if (user.length > 0) {
+          currentUser = user[0];
+        }
+      }
+
+      return {
+        ...room,
+        currentUser,
+        lastMaintenance: new Date().toISOString().split('T')[0], // Placeholder
+      };
+    })
+  );
+
+  return c.json({ rooms: roomsWithUsers });
+});
+
+// Create Room (Admin)
+web.post("/dashboard/admin/rooms", async (c) => {
+  const payload = c.get("jwtPayload");
+  const { code, name, location } = await c.req.json();
+
+  // Check if user is admin
+  const user = await db.select().from(schema.users).where(eq(schema.users.id, payload.userId)).limit(1);
+  if (user.length === 0 || user[0].role !== 'admin') {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  try {
+    const [room] = await db.insert(schema.rooms).values({
+      code,
+      name,
+      location,
+      status: "idle",
+      isActive: true,
+    }).returning();
+
+    return c.json({
+      message: "Room created successfully",
+      room,
+    });
+  } catch (error) {
+    console.error("Room creation error:", error);
+    return c.json({ error: "Failed to create room" }, 500);
+  }
+});
+
+// Update Room (Admin)
+web.put("/dashboard/admin/rooms/:id", async (c) => {
+  const payload = c.get("jwtPayload");
+  const roomId = c.req.param('id');
+  const { code, name, location, isActive } = await c.req.json();
+
+  // Check if user is admin
+  const user = await db.select().from(schema.users).where(eq(schema.users.id, payload.userId)).limit(1);
+  if (user.length === 0 || user[0].role !== 'admin') {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  try {
+    const [updatedRoom] = await db.update(schema.rooms)
+      .set({
+        code,
+        name,
+        location,
+        isActive,
+      })
+      .where(eq(schema.rooms.id, roomId))
+      .returning();
+
+    if (!updatedRoom) {
+      return c.json({ error: "Room not found" }, 404);
+    }
+
+    return c.json({
+      message: "Room updated successfully",
+      room: updatedRoom,
+    });
+  } catch (error) {
+    console.error("Room update error:", error);
+    return c.json({ error: "Failed to update room" }, 500);
+  }
+});
+
+// Delete Room (Admin)
+web.delete("/dashboard/admin/rooms/:id", async (c) => {
+  const payload = c.get("jwtPayload");
+  const roomId = c.req.param('id');
+
+  // Check if user is admin
+  const user = await db.select().from(schema.users).where(eq(schema.users.id, payload.userId)).limit(1);
+  if (user.length === 0 || user[0].role !== 'admin') {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  try {
+    const [deletedRoom] = await db.delete(schema.rooms)
+      .where(eq(schema.rooms.id, roomId))
+      .returning();
+
+    if (!deletedRoom) {
+      return c.json({ error: "Room not found" }, 404);
+    }
+
+    return c.json({
+      message: "Room deleted successfully",
+    });
+  } catch (error) {
+    console.error("Room deletion error:", error);
+    return c.json({ error: "Failed to delete room" }, 500);
+  }
+});
+
 export { web };

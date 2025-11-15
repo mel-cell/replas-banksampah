@@ -68,7 +68,7 @@ export default function ManageUsers() {
         return;
       }
 
-      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/users', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/users`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
