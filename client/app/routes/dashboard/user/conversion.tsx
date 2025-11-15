@@ -15,6 +15,13 @@ interface PaymentMethod {
   accountName?: string;
 }
 
+const PAYMENT_TYPES = [
+  { value: "cash", label: "Cash" },
+  { value: "dana", label: "Dana" },
+  { value: "ovo", label: "OVO" },
+  { value: "gopay", label: "GoPay" },
+] as const;
+
 interface ConversionRequest {
   id: string;
   pointsAmount: number;
@@ -45,9 +52,26 @@ export default function ConversionPage() {
     notes: "",
   });
 
+  const [showAccountFields, setShowAccountFields] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    // Set default to cash if available
+    if (paymentMethods.length > 0) {
+      const cashMethod = paymentMethods.find(method => method.type === 'cash');
+      if (cashMethod) {
+        setFormData(prev => ({ ...prev, methodId: cashMethod.id }));
+        setShowAccountFields(false);
+      } else {
+        // If no cash, use first method and show fields
+        setFormData(prev => ({ ...prev, methodId: paymentMethods[0].id }));
+        setShowAccountFields(paymentMethods[0].type !== 'cash');
+      }
+    }
+  }, [paymentMethods]);
 
   const loadData = async () => {
     try {
@@ -61,7 +85,7 @@ export default function ConversionPage() {
       }
 
       // Load dashboard data for current points
-      const dashboardResponse = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user', {
+      const dashboardResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -76,7 +100,7 @@ export default function ConversionPage() {
       }
 
       // Load conversion history
-      const conversionsResponse = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversions', {
+      const conversionsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversions`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -103,6 +127,18 @@ export default function ConversionPage() {
     }));
   };
 
+  const handleMethodChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, methodId: value }));
+    const selectedMethod = paymentMethods.find(method => method.id === value);
+    if (selectedMethod) {
+      setShowAccountFields(selectedMethod.type !== 'cash');
+      // Clear account fields if switching to cash
+      if (selectedMethod.type === 'cash') {
+        setFormData(prev => ({ ...prev, accountNumber: '', accountName: '' }));
+      }
+    }
+  };
+
   const calculateMoneyAmount = (points: number) => {
     return points * 100; // 1 point = Rp 100
   };
@@ -126,7 +162,7 @@ export default function ConversionPage() {
       return;
     }
 
-    if (!formData.accountNumber || !formData.accountName) {
+    if (showAccountFields && (!formData.accountNumber || !formData.accountName)) {
       alert('Masukkan nomor rekening dan nama rekening');
       return;
     }
@@ -135,7 +171,7 @@ export default function ConversionPage() {
       setIsSubmitting(true);
 
       const token = localStorage.getItem('token');
-      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversion', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversion`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -287,7 +323,7 @@ export default function ConversionPage() {
 
               <div>
                 <Label htmlFor="methodId">Metode Pembayaran</Label>
-                <Select value={formData.methodId} onValueChange={(value: string) => handleInputChange('methodId', value)}>
+                <Select value={formData.methodId} onValueChange={handleMethodChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih metode pembayaran" />
                   </SelectTrigger>
@@ -301,27 +337,31 @@ export default function ConversionPage() {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="accountNumber">Nomor Rekening</Label>
-                <Input
-                  id="accountNumber"
-                  value={formData.accountNumber}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value)}
-                  placeholder="Masukkan nomor rekening"
-                  required
-                />
-              </div>
+              {showAccountFields && (
+                <>
+                  <div>
+                    <Label htmlFor="accountNumber">Nomor Rekening</Label>
+                    <Input
+                      id="accountNumber"
+                      value={formData.accountNumber}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountNumber', e.target.value)}
+                      placeholder="Masukkan nomor rekening"
+                      required
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="accountName">Nama Rekening</Label>
-                <Input
-                  id="accountName"
-                  value={formData.accountName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountName', e.target.value)}
-                  placeholder="Masukkan nama rekening"
-                  required
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="accountName">Nama Rekening</Label>
+                    <Input
+                      id="accountName"
+                      value={formData.accountName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('accountName', e.target.value)}
+                      placeholder="Masukkan nama rekening"
+                      required
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <Label htmlFor="notes">Catatan (Opsional)</Label>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -17,7 +17,12 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  QrCode,
+  Camera,
+  CameraOff,
 } from "lucide-react";
+import jsQR from "jsqr";
+import { useParams } from "react-router";
 
 export function meta() {
   return [
@@ -43,15 +48,43 @@ interface RoomSession {
   isActive: boolean;
 }
 
+interface QrReaderState {
+  isScanning: boolean;
+  hasPermission: boolean;
+  error: string | null;
+  scannedCode: string | null;
+}
+
 export default function Room() {
   const { t } = useTranslation();
-  const hardcodedCode = "banksampah01";
+  const { machineCode } = useParams<{ machineCode: string }>();
+  const defaultCode = machineCode || "banksampah01";
   const [session, setSession] = useState<RoomSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [realTimeBottles, setRealTimeBottles] = useState(0);
   const [realTimePoints, setRealTimePoints] = useState(0);
   const [isActivating, setIsActivating] = useState(false);
+
+  // QR Code scanning state
+  const [qrState, setQrState] = useState<QrReaderState>({
+    isScanning: false,
+    hasPermission: false,
+    error: null,
+    scannedCode: null,
+  });
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   // Auto-activate when component mounts
   useEffect(() => {
@@ -62,10 +95,10 @@ export default function Room() {
       return;
     }
 
-    if (!session && !isActivating) {
-      handleActivate(hardcodedCode);
+    if (!session && !isActivating && !qrState.isScanning) {
+      handleActivate(defaultCode);
     }
-  }, [session, isActivating]);
+  }, [session, isActivating, qrState.isScanning, defaultCode]);
 
   // Real-time bottle count updates via polling
   useEffect(() => {
@@ -97,6 +130,80 @@ export default function Room() {
       return () => clearInterval(interval);
     }
   }, [session?.isActive, session?.roomCode]);
+
+  const requestCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" } // Use back camera on mobile
+      });
+      setQrState(prev => ({ ...prev, hasPermission: true, error: null }));
+      return stream;
+    } catch (error) {
+      console.error("Camera permission denied:", error);
+      setQrState(prev => ({
+        ...prev,
+        hasPermission: false,
+        error: "Camera permission denied. Please allow camera access to scan QR codes."
+      }));
+      return null;
+    }
+  };
+
+  const startQrScanning = async () => {
+    setQrState(prev => ({ ...prev, isScanning: true, error: null, scannedCode: null }));
+
+    const stream = await requestCameraPermission();
+    if (!stream) return;
+
+    streamRef.current = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+
+      // Start scanning loop
+      const scanQrCode = () => {
+        if (!qrState.isScanning || !videoRef.current || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code) {
+          console.log("QR Code detected:", code.data);
+          setQrState(prev => ({ ...prev, scannedCode: code.data }));
+          stopQrScanning();
+          handleActivate(code.data);
+          return;
+        }
+
+        if (qrState.isScanning) {
+          requestAnimationFrame(scanQrCode);
+        }
+      };
+
+      scanQrCode();
+    }
+  };
+
+  const stopQrScanning = () => {
+    setQrState(prev => ({ ...prev, isScanning: false }));
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
 
   const handleActivate = async (machineCode: string) => {
     setIsActivating(true);
@@ -227,8 +334,112 @@ export default function Room() {
           </p>
         </div>
 
-        {/* Activation Card */}
-        {!session && (
+        {/* QR Scanner Card */}
+        {!session && !qrState.isScanning && (
+          <Card className="border-accent">
+            <CardHeader>
+              <CardTitle className="text-center text-green-600 flex items-center justify-center gap-2">
+                <QrCode className="w-6 h-6" />
+                Scan QR Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center">
+                <div className="text-lg font-medium mb-2">Scan Machine QR Code</div>
+                <div className="text-sm text-muted-foreground">
+                  Point your camera at the machine's QR code to start your recycling session
+                </div>
+              </div>
+
+              {qrState.error && (
+                <div className="text-sm text-center text-red-600">
+                  {qrState.error}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <Button
+                  onClick={startQrScanning}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                  disabled={qrState.isScanning}
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Start Scanning
+                </Button>
+
+                <Button
+                  onClick={() => handleActivate(defaultCode)}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={isActivating}
+                >
+                  {isActivating ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    "Manual Entry"
+                  )}
+                </Button>
+              </div>
+
+              {message && (
+                <div
+                  className={`text-sm text-center ${
+                    message.includes("successfully")
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {message}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Camera Scanner */}
+        {qrState.isScanning && (
+          <Card className="border-accent">
+            <CardHeader>
+              <CardTitle className="text-center text-green-600 flex items-center justify-center gap-2">
+                <Camera className="w-6 h-6" />
+                Scanning QR Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="relative">
+                <video
+                  ref={videoRef}
+                  className="w-full h-64 bg-black rounded-lg"
+                  playsInline
+                  muted
+                />
+                <canvas
+                  ref={canvasRef}
+                  className="hidden"
+                />
+                <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white rounded-lg"></div>
+                </div>
+              </div>
+
+              <div className="text-center text-sm text-muted-foreground">
+                Position the QR code within the frame
+              </div>
+
+              <Button
+                onClick={stopQrScanning}
+                variant="outline"
+                className="w-full"
+              >
+                <CameraOff className="w-4 h-4 mr-2" />
+                Stop Scanning
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Activation Card (Manual) */}
+        {!session && !qrState.isScanning && isActivating && (
           <Card className="border-accent">
             <CardHeader>
               <CardTitle className="text-center text-green-600 flex items-center justify-center gap-2">
@@ -238,7 +449,7 @@ export default function Room() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <div className="text-lg font-medium mb-2">Machine Code: {hardcodedCode}</div>
+                <div className="text-lg font-medium mb-2">Machine Code: {defaultCode}</div>
                 <div className="text-sm text-muted-foreground">
                   Activating your recycling session...
                 </div>
