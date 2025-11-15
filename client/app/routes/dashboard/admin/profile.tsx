@@ -85,22 +85,25 @@ export default function AdminProfile() {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fullname: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-        }),
-      });
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/profile`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fullname: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        throw new Error("Failed to update profile");
       }
 
       const data = await response.json();
@@ -111,10 +114,10 @@ export default function AdminProfile() {
         phone: formData.phone,
       }));
       setIsEditing(false);
-      alert('Profil berhasil diperbarui!');
+      alert("Profil berhasil diperbarui!");
     } catch (err) {
-      console.error('Profile update error:', err);
-      alert('Gagal memperbarui profil. Silakan coba lagi.');
+      console.error("Profile update error:", err);
+      alert("Gagal memperbarui profil. Silakan coba lagi.");
     }
   };
 
@@ -127,22 +130,25 @@ export default function AdminProfile() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/profile/password', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
-        }),
-      });
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/profile/password",
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update password');
+        throw new Error(errorData.error || "Failed to update password");
       }
 
       alert("Password berhasil diubah!");
@@ -153,8 +159,8 @@ export default function AdminProfile() {
       });
       setShowPasswordModal(false);
     } catch (err) {
-      console.error('Password update error:', err);
-      alert('Gagal mengubah password. Silakan coba lagi.');
+      console.error("Password update error:", err);
+      alert("Gagal mengubah password. Silakan coba lagi.");
     }
   };
 
@@ -171,17 +177,20 @@ export default function AdminProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/web/dashboard/admin/profile', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          "${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/profile",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch profile');
+          throw new Error("Failed to fetch profile");
         }
 
         const data = await response.json();
@@ -189,13 +198,13 @@ export default function AdminProfile() {
           id: data.profile.id,
           name: data.profile.fullname,
           email: data.profile.email,
-          phone: data.profile.phone || '',
-          role: data.profile.role === 'admin' ? 'Admin' : 'Super Admin',
+          phone: data.profile.phone || "",
+          role: data.profile.role === "admin" ? "Admin" : "Super Admin",
           joinDate: data.profile.createdAt,
         });
       } catch (err) {
-        setError('Failed to load profile data');
-        console.error('Profile fetch error:', err);
+        setError("Failed to load profile data");
+        console.error("Profile fetch error:", err);
       } finally {
         setIsLoading(false);
       }

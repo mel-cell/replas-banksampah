@@ -14,7 +14,7 @@ const pool = new Pool({
 const app = new Hono();
 
 app.use("/*", cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:3004", "http://103.144.209.103:3004"],
   credentials: true,
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
@@ -52,10 +52,10 @@ app.get("/conection", async (c) => {
   }
 });
 
-console.log("Server running on port 3000");
+console.log("Server running on port 3004");
 
 export default {
-  port: 3000,
+  port: 3004,
   hostname: "0.0.0.0",
   fetch: app.fetch,
 };

@@ -55,7 +55,7 @@ export default function LaporanPenjualanSampah() {
       setIsLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/sales-reports', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/sales-reports', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -85,7 +85,7 @@ export default function LaporanPenjualanSampah() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/sales-reports', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/sales-reports', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +134,7 @@ export default function LaporanPenjualanSampah() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/sales-reports/${selectedReport.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/sales-reports/${selectedReport.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -165,7 +165,7 @@ export default function LaporanPenjualanSampah() {
     if (confirm('Apakah Anda yakin ingin menghapus laporan penjualan ini?')) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/sales-reports/${reportId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/sales-reports/${reportId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

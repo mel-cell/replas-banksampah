@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../db/schema";
 import { authMiddleware } from "../lib/auth";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import mqttService from "./mqtt";
 
 const pool = new Pool({
@@ -50,7 +50,11 @@ iot.post("/activate", async (c) => {
     .limit(1);
   if (machine.length === 0) return c.json({ error: "Machine not found" }, 404);
   if (machine[0].isActive === false)
-    return c.json({ error: "Machine is currently in use or inactive" }, 400);
+    return c.json({
+      error: "Ruangan sedang digunakan",
+      details: `Ruangan ${machineId} sedang digunakan oleh user lain. Silakan tunggu atau pilih ruangan lain.`,
+      currentUserId: machine[0].currentUserId
+    }, 409);
 
   // Check MQTT connection
   if (!mqttService.isConnected()) {
@@ -66,7 +70,11 @@ iot.post("/activate", async (c) => {
   // Set machine to in_use (inactive for others)
   await db
     .update(schema.rooms)
-    .set({ isActive: false })
+    .set({
+      isActive: false,
+      currentUserId: payload.userId,
+      status: "in_use"
+    })
     .where(eq(schema.rooms.id, machine[0].id));
 
   // Create initial bottle collection record
@@ -89,6 +97,7 @@ iot.post("/activate", async (c) => {
       userId: payload.userId,
       sessionId: bottleCollection[0].id,
       timestamp: new Date().toISOString(),
+      command: "start_session"
     })
   );
 
@@ -170,7 +179,7 @@ iot.post("/session-end", async (c) => {
     walletId: walletId,
     changeAmount: points,
     type: "credit",
-    refId: 0, // For now, use 0 as refId since machine.id is UUID
+    refId: machine.id, 
     refTable: "rooms",
     description: `Bottle collection at room ${machine.code}`,
     balanceAfter: newBalance,
@@ -211,6 +220,49 @@ iot.post("/session-end", async (c) => {
     newBalance,
     machine: machine,
     endedAt: new Date().toISOString(),
+  });
+});
+
+iot.get("/machine/:code/bottle-count", async (c) => {
+  const { code } = c.req.param();
+  const payload = c.get("jwtPayload");
+
+  // Find the machine
+  const machine = await db
+    .select()
+    .from(schema.rooms)
+    .where(eq(schema.rooms.code, code))
+    .limit(1);
+
+  if (machine.length === 0) {
+    return c.json({ error: "Machine not found" }, 404);
+  }
+
+  // Find active bottle collection for this machine (unverified = active session)
+  const activeCollection = await db
+    .select()
+    .from(schema.bottleCollections)
+    .where(
+      and(
+        eq(schema.bottleCollections.roomId, machine[0].id),
+        eq(schema.bottleCollections.verified, false)
+      )
+    )
+    .orderBy(schema.bottleCollections.createdAt)
+    .limit(1);
+
+  if (activeCollection.length === 0) {
+    return c.json({ bottles: 0, points: 0 }, 200);
+  }
+
+  const collection = activeCollection[0];
+  const points = collection.totalBottles * 10;
+
+  return c.json({
+    bottles: collection.totalBottles,
+    points,
+    sessionId: collection.id,
+    timestamp: new Date().toISOString(),
   });
 });
 

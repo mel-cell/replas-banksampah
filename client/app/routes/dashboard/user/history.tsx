@@ -29,7 +29,7 @@ export default function UserHistory() {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/web/dashboard/user', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

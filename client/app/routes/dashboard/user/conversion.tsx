@@ -61,7 +61,7 @@ export default function ConversionPage() {
       }
 
       // Load dashboard data for current points
-      const dashboardResponse = await fetch('http://localhost:3000/api/web/dashboard/user', {
+      const dashboardResponse = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -76,7 +76,7 @@ export default function ConversionPage() {
       }
 
       // Load conversion history
-      const conversionsResponse = await fetch('http://localhost:3000/api/web/dashboard/user/conversions', {
+      const conversionsResponse = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversions', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -135,7 +135,7 @@ export default function ConversionPage() {
       setIsSubmitting(true);
 
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/web/dashboard/user/conversion', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversion', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

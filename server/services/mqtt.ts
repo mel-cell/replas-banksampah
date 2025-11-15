@@ -2,7 +2,7 @@ import mqtt from "mqtt";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -10,7 +10,8 @@ const pool = new Pool({
 
 const db = drizzle(pool, { schema });
 
-const mqttClient = mqtt.connect("mqtt://test.mosquitto.org", { //ubah nanti jadi broker yang bener
+const mqttClient = mqtt.connect("mqtt://103.144.209.103", { // Public IP MQTT broker
+  port: 1883, // Standard MQTT port
   reconnectPeriod: 5000, // Reconnect every 5 seconds
   connectTimeout: 10000, // Connection timeout 10 seconds
   keepalive: 60, // Keep alive ping every 60 seconds
@@ -61,23 +62,28 @@ export const mqttService = {
           // Handle bottle detection - record to database
           console.log(`Bottle detected at ${machineCode}:`, payload);
 
-          // Find the active machine and session
+          // Find the machine
           const [machine] = await db
             .select()
             .from(schema.rooms)
             .where(eq(schema.rooms.code, machineCode))
             .limit(1);
 
-          if (!machine || machine.isActive) {
-            console.log(`Machine ${machineCode} not in active session`);
+          if (!machine) {
+            console.log(`Machine ${machineCode} not found`);
             return;
           }
 
-          // Find active bottle collection for this machine
+          // Find active bottle collection for this machine (unverified = active session)
           const [activeCollection] = await db
             .select()
             .from(schema.bottleCollections)
-            .where(eq(schema.bottleCollections.roomId, machine.id))
+            .where(
+              and(
+                eq(schema.bottleCollections.roomId, machine.id),
+                eq(schema.bottleCollections.verified, false)
+              )
+            )
             .orderBy(schema.bottleCollections.createdAt)
             .limit(1);
 
@@ -124,7 +130,12 @@ export const mqttService = {
           const [activeCollection] = await db
             .select()
             .from(schema.bottleCollections)
-            .where(eq(schema.bottleCollections.roomId, machine.id))
+            .where(
+              and(
+                eq(schema.bottleCollections.roomId, machine.id),
+                eq(schema.bottleCollections.verified, false)
+              )
+            )
             .orderBy(schema.bottleCollections.createdAt)
             .limit(1);
 
@@ -153,7 +164,7 @@ export const mqttService = {
               walletId: wallet.id,
               changeAmount: points,
               type: "credit",
-              refId: 0, // Use 0 for now since machine.id is UUID
+              refId: machine.id, 
               refTable: "rooms",
               description: `Auto-ended session at room ${machine.code}`,
               balanceAfter: newBalance,
@@ -174,7 +185,11 @@ export const mqttService = {
           // Reactivate machine
           await db
             .update(schema.rooms)
-            .set({ isActive: true })
+            .set({
+              isActive: true,
+              currentUserId: null,
+              status: "idle"
+            })
             .where(eq(schema.rooms.id, machine.id));
 
           console.log(
