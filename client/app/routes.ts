@@ -8,7 +8,7 @@ export default [
   route("contact", "routes/contact.tsx"),
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
-  route("room/:code", "routes/room/room.tsx"),
+  route("room/banksampah01/", "routes/room/room.tsx"),
 
   // Dashboard User
   route("dashboard/user", "routes/dashboard/user/layout.tsx", [

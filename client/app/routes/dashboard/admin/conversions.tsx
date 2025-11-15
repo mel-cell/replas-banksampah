@@ -42,7 +42,7 @@ export default function AdminConversionsPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/conversions', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/conversions`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -68,7 +68,7 @@ export default function AdminConversionsPage() {
       setProcessingId(conversionId);
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/conversions/${conversionId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/conversions/${conversionId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

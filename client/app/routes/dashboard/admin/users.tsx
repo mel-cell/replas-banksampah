@@ -68,7 +68,7 @@ export default function ManageUsers() {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin/users', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/users', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -121,7 +121,7 @@ export default function ManageUsers() {
   const handleStatusChange = async (userId: string, newStatus: boolean) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/users/${userId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/users/${userId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -146,7 +146,7 @@ export default function ManageUsers() {
     if (confirm("Apakah Anda yakin ingin menghapus user ini?")) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/users/${userId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/users/${userId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -188,7 +188,7 @@ export default function ManageUsers() {
     if (editingUser) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/api/web/dashboard/admin/users/${editingUser.id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/users/${editingUser.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,

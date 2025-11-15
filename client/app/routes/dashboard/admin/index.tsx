@@ -65,7 +65,7 @@ export default function AdminDashboardIndex() {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/web/dashboard/admin', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

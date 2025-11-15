@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -45,8 +44,8 @@ interface RoomSession {
 }
 
 export default function Room() {
-  const { code } = useParams<{ code: string }>();
   const { t } = useTranslation();
+  const hardcodedCode = "banksampah01";
   const [session, setSession] = useState<RoomSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -54,7 +53,7 @@ export default function Room() {
   const [realTimePoints, setRealTimePoints] = useState(0);
   const [isActivating, setIsActivating] = useState(false);
 
-  // Auto-activate when component mounts with code from URL
+  // Auto-activate when component mounts
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -63,24 +62,41 @@ export default function Room() {
       return;
     }
 
-    if (code && !session && !isActivating) {
-      handleActivate(code);
+    if (!session && !isActivating) {
+      handleActivate(hardcodedCode);
     }
-  }, [code, session, isActivating]);
+  }, [session, isActivating]);
 
-  // WebSocket connection for real-time updates
+  // Real-time bottle count updates via polling
   useEffect(() => {
-    if (session?.isActive) { 
-      // TODO: Implement WebSocket connection to receive real-time bottle detection
-      // For now, simulate with interval
-      const interval = setInterval(() => {
-        setRealTimeBottles((prev) => prev + Math.floor(Math.random() * 3));
-        setRealTimePoints((prev) => prev + Math.floor(Math.random() * 30));
-      }, 2000);
+    if (session?.isActive) {
+      const interval = setInterval(async () => {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) return;
+
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/api/iot/machine/${session.roomCode}/bottle-count`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            setRealTimeBottles(data.bottles);
+            setRealTimePoints(data.points);
+          }
+        } catch (error) {
+          console.error("Failed to fetch bottle count:", error);
+        }
+      }, 2000); // Poll every 2 seconds
 
       return () => clearInterval(interval);
     }
-  }, [session?.isActive]);
+  }, [session?.isActive, session?.roomCode]);
 
   const handleActivate = async (machineCode: string) => {
     setIsActivating(true);
@@ -95,7 +111,7 @@ export default function Room() {
         return;
       }
 
-      const response = await fetch("http://localhost:3000/api/iot/activate", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/iot/activate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -122,7 +138,11 @@ export default function Room() {
         setMessage("Machine activated successfully!");
       } else {
         const error = await response.json();
-        setMessage(error.error || "Failed to activate machine");
+        if (response.status === 409) {
+          setMessage(error.details || error.error || "Ruangan sedang digunakan");
+        } else {
+          setMessage(error.error || "Failed to activate machine");
+        }
       }
     } catch (error) {
       setMessage("Network error occurred");
@@ -141,7 +161,7 @@ export default function Room() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:3000/api/iot/session-end",
+        `${import.meta.env.VITE_API_BASE_URL}/api/iot/session-end`,
         {
           method: "POST",
           headers: {
@@ -218,7 +238,7 @@ export default function Room() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <div className="text-lg font-medium mb-2">Machine Code: {code}</div>
+                <div className="text-lg font-medium mb-2">Machine Code: {hardcodedCode}</div>
                 <div className="text-sm text-muted-foreground">
                   Activating your recycling session...
                 </div>
