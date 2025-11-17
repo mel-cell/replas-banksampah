@@ -85,7 +85,7 @@ export default function ConversionPage() {
       }
 
       // Load dashboard data for current points
-      const dashboardResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user`, {
+      const dashboardResponse = await fetch("/api/web/dashboard/user", {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -99,8 +99,22 @@ export default function ConversionPage() {
         setCurrentPoints(dashboardData.wallet?.pointsBalance || 0);
       }
 
+      // Load current exchange rate
+      const rateResponse = await fetch("/api/admin/exchange-rate", {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (rateResponse.ok) {
+        const rateData = await rateResponse.json();
+        setExchangeRate({ rupiahPerPoint: rateData.rupiahPerPoint });
+      }
+
       // Load conversion history
-      const conversionsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversions`, {
+      const conversionsResponse = await fetch("/api/conversion/request", {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -110,7 +124,7 @@ export default function ConversionPage() {
 
       if (conversionsResponse.ok) {
         const conversionsData = await conversionsResponse.json();
-        setConversions(conversionsData.conversions || []);
+        setConversions(conversionsData.requests || []);
       }
 
     } catch (err) {
@@ -139,8 +153,10 @@ export default function ConversionPage() {
     }
   };
 
+  const [exchangeRate, setExchangeRate] = useState({ rupiahPerPoint: 75 });
+
   const calculateMoneyAmount = (points: number) => {
-    return points * 100; // 1 point = Rp 100
+    return points * exchangeRate.rupiahPerPoint;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,7 +187,7 @@ export default function ConversionPage() {
       setIsSubmitting(true);
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/user/conversion`, {
+      const response = await fetch("/api/conversion/request", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -297,7 +313,7 @@ export default function ConversionPage() {
           <CardHeader>
             <CardTitle className="text-green-600">Form Penukaran Poin</CardTitle>
             <CardDescription>
-              Tukar poin Anda menjadi uang tunai (1 poin = Rp 100)
+              Tukar poin Anda menjadi uang tunai (1 poin = Rp {exchangeRate.rupiahPerPoint.toLocaleString()})
             </CardDescription>
           </CardHeader>
           <CardContent>

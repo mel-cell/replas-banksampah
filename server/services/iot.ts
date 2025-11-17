@@ -5,6 +5,7 @@ import * as schema from "../db/schema";
 import { authMiddleware } from "../lib/auth";
 import { eq, and } from "drizzle-orm";
 import mqttService from "./mqtt";
+import websocketService from "./websocket";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -122,6 +123,19 @@ iot.post("/activate", async (c) => {
     );
   }
 
+  // Send WebSocket update to notify clients
+  websocketService.sendSessionUpdate(machineId, "started", "Session activated successfully");
+
+  // Broadcast to admin dashboard
+  websocketService.broadcastRoomUpdate({
+    roomCode: machineId,
+    status: "in_use",
+    connected: true,
+    currentUser: payload.userName || "Unknown User",
+    location: "SMKN 6 Malang", // Specific for banksampah01
+    lastActivity: new Date().toISOString()
+  });
+
   // Set auto-timeout for 15 minutes
   const timeoutId = setTimeout(async () => {
     console.log(`Auto-ending session for user ${payload.userId} in room ${machineId}`);
@@ -183,8 +197,16 @@ iot.post("/session-end", async (c) => {
     .limit(1);
   if (!machine) return c.json({ error: "Machine not found" }, 404);
 
-  // Calculate points (10 points per bottle)
-  const points = totalBottles * 10;
+  // Get current exchange rate settings
+  const [exchangeRate] = await db
+    .select()
+    .from(schema.exchangeRateSettings)
+    .where(eq(schema.exchangeRateSettings.isActive, true))
+    .limit(1);
+
+  // Calculate points (pointsPerBottle per bottle, default 1)
+  const pointsPerBottle = exchangeRate?.pointsPerBottle || 1;
+  const points = totalBottles * pointsPerBottle;
 
   // Get current wallet
   const [wallet] = await db
@@ -248,6 +270,20 @@ iot.post("/session-end", async (c) => {
     })
   );
 
+  // Send WebSocket update to notify clients
+  websocketService.sendSessionUpdate(machineId, "ended", `Session ended with ${totalBottles} bottles and ${points} points`);
+
+  // Broadcast to admin dashboard
+  websocketService.broadcastRoomUpdate({
+    roomCode: machineId,
+    status: "idle",
+    connected: true,
+    bottleCount: totalBottles,
+    points: points,
+    location: "SMKN 6 Malang", // Specific for banksampah01
+    lastActivity: new Date().toISOString()
+  });
+
   return c.json({
     success: true,
     points,
@@ -294,9 +330,18 @@ async function autoEndSession(sessionId: string, machineId: string, userId: numb
 
     if (!user || !machine) return;
 
-    // Calculate final points
+    // Calculate final points using current exchange rate
     const totalBottles = activeCollection.totalBottles;
-    const points = totalBottles * 10;
+
+    // Get current exchange rate settings
+    const [exchangeRate] = await db
+      .select()
+      .from(schema.exchangeRateSettings)
+      .where(eq(schema.exchangeRateSettings.isActive, true))
+      .limit(1);
+
+    const pointsPerBottle = exchangeRate?.pointsPerBottle || 1;
+    const points = totalBottles * pointsPerBottle;
 
     // Update wallet
     const [wallet] = await db
@@ -393,7 +438,16 @@ iot.get("/machine/:code/bottle-count", async (c) => {
   }
 
   const collection = activeCollection[0];
-  const points = collection.totalBottles * 10;
+
+  // Get current exchange rate settings
+  const [exchangeRate] = await db
+    .select()
+    .from(schema.exchangeRateSettings)
+    .where(eq(schema.exchangeRateSettings.isActive, true))
+    .limit(1);
+
+  const pointsPerBottle = exchangeRate?.pointsPerBottle || 1;
+  const points = collection.totalBottles * pointsPerBottle;
 
   return c.json({
     bottles: collection.totalBottles,

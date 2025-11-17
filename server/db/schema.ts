@@ -79,6 +79,10 @@ export const rooms = pgTable(
     isActive: boolean("is_active").default(true),
     // Session status (real-time machine state)
     status: machineStatus("status").default("idle").notNull(),
+    // IoT connection status (real-time online/offline)
+    isOnline: boolean("is_online").default(false),
+    // Last seen timestamp for IoT devices
+    lastSeen: timestamp("last_seen"),
     // Who currently has the machine locked
     currentUserId: uuid("current_user_id").references(() => users.id, {
       onDelete: "set null",
@@ -89,6 +93,8 @@ export const rooms = pgTable(
     supervisorIdx: index("idx_rooms_supervisor").on(table.supervisorId),
     codeIdx: index("idx_rooms_code").on(table.code),
     statusIdx: index("idx_rooms_status").on(table.status),
+    onlineIdx: index("idx_rooms_online").on(table.isOnline),
+    lastSeenIdx: index("idx_rooms_last_seen").on(table.lastSeen),
   })
 );
 
@@ -278,5 +284,24 @@ export const laporanPenjualanDetail = pgTable(
   (table) => ({
     laporanIdx: index("idx_laporan_detail_laporan").on(table.laporanId),
     typeIdx: index("idx_laporan_detail_type").on(table.bottleType),
+  })
+);
+
+// Exchange Rate Settings Table
+export const exchangeRateSettings = pgTable(
+  "exchange_rate_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pointsPerBottle: integer("points_per_bottle").notNull().default(1),
+    rupiahPerPoint: decimal("rupiah_per_point", { precision: 8, scale: 2 }).notNull().default("75.00"),
+    isActive: boolean("is_active").default(true),
+    updatedBy: uuid("updated_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    activeIdx: index("idx_exchange_rate_active").on(table.isActive),
   })
 );
