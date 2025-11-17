@@ -20,9 +20,11 @@ import {
   QrCode,
   Camera,
   CameraOff,
+  ArrowLeft,
 } from "lucide-react";
 import jsQR from "jsqr";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
+import { websocketService } from "../../lib/websocket";
 
 export function meta() {
   return [
@@ -57,6 +59,7 @@ interface QrReaderState {
 
 export default function Room() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { machineCode } = useParams<{ machineCode: string }>();
   const defaultCode = machineCode || "banksampah01";
   const [session, setSession] = useState<RoomSession | null>(null);
@@ -65,6 +68,68 @@ export default function Room() {
   const [realTimeBottles, setRealTimeBottles] = useState(0);
   const [realTimePoints, setRealTimePoints] = useState(0);
   const [isActivating, setIsActivating] = useState(false);
+
+  // Get user role from localStorage
+  const getUserRole = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        return userData.role;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const handleBackToDashboard = async () => {
+    // Auto-end session if active before navigating
+    if (session?.isActive && session.roomCode) {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem("token");
+        if (token) {
+          await fetch("/api/iot/session-end", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              machineId: session.roomCode,
+              totalBottles: realTimeBottles,
+            }),
+          });
+          // Update session state to reflect ended session
+          setSession((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  isActive: false,
+                  totalBottles: realTimeBottles,
+                  pointsEarned: realTimePoints,
+                }
+              : null
+          );
+          setMessage(`Session ended! You earned ${realTimePoints} points.`);
+        }
+      } catch (error) {
+        console.error("Failed to end session:", error);
+        setMessage("Failed to end session properly");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    // Navigate to appropriate dashboard
+    const role = getUserRole();
+    if (role === 'admin') {
+      navigate('/dashboard/admin');
+    } else {
+      navigate('/dashboard/user');
+    }
+  };
 
   // QR Code scanning state
   const [qrState, setQrState] = useState<QrReaderState>({
@@ -100,36 +165,65 @@ export default function Room() {
     }
   }, [session, isActivating, qrState.isScanning, defaultCode]);
 
-  // Real-time bottle count updates via polling
+  // WebSocket connection for real-time updates
   useEffect(() => {
-    if (session?.isActive) {
-      const interval = setInterval(async () => {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) return;
+    if (session?.isActive && session.roomCode) {
+      // Connect to WebSocket
+      websocketService.connect(session.roomCode);
 
-          const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/api/iot/machine/${session.roomCode}/bottle-count`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+      // Register message handlers
+      websocketService.onMessage("bottle_update", (data) => {
+        setRealTimeBottles(data.bottleCount);
+        setRealTimePoints(data.points);
+      });
 
-          if (response.ok) {
-            const data = await response.json();
-            setRealTimeBottles(data.bottles);
-            setRealTimePoints(data.points);
-          }
-        } catch (error) {
-          console.error("Failed to fetch bottle count:", error);
+      websocketService.onMessage("session_update", (data) => {
+        if (data.status === "ended") {
+          setMessage(data.message || "Session ended");
         }
-      }, 2000); // Poll every 2 seconds
+      });
 
-      return () => clearInterval(interval);
+      // Cleanup on unmount or session end
+      return () => {
+        websocketService.offMessage("bottle_update");
+        websocketService.offMessage("session_update");
+        if (!session.isActive) {
+          websocketService.disconnect();
+        }
+      };
     }
   }, [session?.isActive, session?.roomCode]);
+
+  // Auto-end session when navigating away
+  useEffect(() => {
+    return () => {
+      if (session?.isActive && session.roomCode) {
+        // Automatically end the session when user navigates away
+        const endSessionOnNavigate = async () => {
+          try {
+            const token = localStorage.getItem("token");
+            if (token) {
+              await fetch("/api/iot/session-end", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  machineId: session.roomCode,
+                  totalBottles: realTimeBottles,
+                }),
+              });
+              // Note: We don't update UI since component is unmounting
+            }
+          } catch (error) {
+            console.error("Failed to auto-end session:", error);
+          }
+        };
+        endSessionOnNavigate();
+      }
+    };
+  }, [session?.isActive, session?.roomCode, realTimeBottles]);
 
   const requestCameraPermission = async () => {
     try {
@@ -218,7 +312,7 @@ export default function Room() {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/iot/activate`, {
+      const response = await fetch("/api/iot/activate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -268,7 +362,7 @@ export default function Room() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/iot/session-end`,
+        "/api/iot/session-end",
         {
           method: "POST",
           headers: {
@@ -321,11 +415,20 @@ export default function Room() {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center">
-          <img
-            src="/logo_3.webp"
-            alt="Replas Logo"
-            className="mx-auto h-12 w-auto mb-4"
-          />
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <button
+              onClick={handleBackToDashboard}
+              className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              title="Kembali ke Dashboard"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <img
+              src="/logo_3.webp"
+              alt="Replas Logo"
+              className="h-12 w-auto"
+            />
+          </div>
           <h1 className="text-4xl font-extrabold text-foreground">
             Room Session
           </h1>
@@ -623,17 +726,26 @@ export default function Room() {
                 </div>
               )}
 
-              <Button
-                onClick={() => {
-                  setSession(null);
-                  setMessage("");
-                  setRealTimeBottles(0);
-                  setRealTimePoints(0);
-                }}
-                className="w-full bg-green-500 hover:bg-green-600 text-white"
-              >
-                Start New Session
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    setSession(null);
+                    setMessage("");
+                    setRealTimeBottles(0);
+                    setRealTimePoints(0);
+                  }}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                >
+                  Start New Session
+                </Button>
+                <Button
+                  onClick={handleBackToDashboard}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Kembali ke Dashboard
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

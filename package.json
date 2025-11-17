@@ -2,6 +2,8 @@
   "name": "replas-banksampah",
   "scripts": {
     "server": "bun run --hot server/index.ts",
+    "start": "bun run server/index.ts",
+    "build": "cd client && NODE_ENV=production bun run build",
     "client": "cd client && bun run dev",
     "dev": "concurrently \"bun run --hot server/index.ts\" \"cd client && bun run dev\"",
     "db:generate": "drizzle-kit generate",
@@ -23,7 +25,10 @@
     "mqtt": "^5.14.1",
     "pg": "^8.16.3",
     "qrcode.react": "^4.2.0",
-    "react-router-dom": "^7.9.5"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5",
+    "redis": "^5.9.0",
+    "remix-hono": "^0.0.18"
   },
   "devDependencies": {
     "@types/bun": "latest",

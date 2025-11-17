@@ -87,7 +87,7 @@ export default function AdminProfile() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/profile`,
+        "/api/web/dashboard/admin/profile",
         {
           method: "PUT",
           headers: {
@@ -132,7 +132,7 @@ export default function AdminProfile() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/profile/password`,
+        "/api/web/dashboard/admin/profile/password",
         {
           method: "PUT",
           headers: {
@@ -179,7 +179,7 @@ export default function AdminProfile() {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/profile`,
+          "/api/web/dashboard/admin/profile",
           {
             method: "GET",
             headers: {

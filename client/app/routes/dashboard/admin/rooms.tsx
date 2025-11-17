@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Monitor,
   Activity,
@@ -11,8 +11,13 @@ import {
   QrCode,
   Download,
   Plus,
+  Wifi,
+  WifiOff,
+  ArrowLeft,
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
+import { adminWebSocketService } from "../../../lib/adminWebsocket";
+import { useNavigate } from "react-router";
 
 interface Room {
   id: string;
@@ -21,6 +26,13 @@ interface Room {
   location: string;
   status: "idle" | "in_use" | "maintenance";
   isActive: boolean;
+  isOnline?: boolean;
+  lastSeen?: string;
+  connected?: boolean;
+  issue?: string;
+  bottleCount?: number;
+  points?: number;
+  lastActivity?: string;
   currentUser?: {
     name: string;
     activity: string;
@@ -35,11 +47,35 @@ interface QrModalProps {
 }
 
 export default function MonitorRooms() {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Get user role from localStorage
+  const getUserRole = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        return userData.role;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const handleBackToDashboard = () => {
+    const role = getUserRole();
+    if (role === 'admin') {
+      navigate('/dashboard/admin');
+    } else {
+      navigate('/dashboard/user');
+    }
+  };
 
   // Fetch rooms from API
   useEffect(() => {
@@ -47,7 +83,7 @@ export default function MonitorRooms() {
       try {
         setIsLoading(true);
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/web/dashboard/admin/rooms`, {
+        const response = await fetch("/api/web/dashboard/admin/rooms", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -56,12 +92,25 @@ export default function MonitorRooms() {
 
         if (response.ok) {
           const data = await response.json();
-          setRooms(data.rooms || []);
+          // Merge API data with real-time fields
+          const mergedRooms = (data.rooms || []).map((room: any) => ({
+            ...room,
+            connected: room.isOnline || false, // Use isOnline from database
+            bottleCount: 0,
+            points: 0,
+            lastActivity: room.lastSeen || new Date().toISOString(),
+            issue: room.isOnline === false ? "IoT device offline" : undefined
+          }));
+          setRooms(mergedRooms);
         } else {
           console.error("Failed to fetch rooms");
+          // Use sample room if API fails
+          setRooms([sampleRoom]);
         }
       } catch (error) {
         console.error("Error fetching rooms:", error);
+        // Use sample room if fetch fails
+        setRooms([sampleRoom]);
       } finally {
         setIsLoading(false);
       }
@@ -78,9 +127,13 @@ export default function MonitorRooms() {
     id: "R001",
     code: "banksampah01",
     name: "Ruang Monitoring Utama",
-    location: "Lantai 1 - Blok A",
+    location: "SMKN 6 Malang",
     status: "idle",
     isActive: true,
+    connected: true,
+    bottleCount: 0,
+    points: 0,
+    lastActivity: new Date().toISOString(),
     currentUser: {
       name: "Ahmad Surya",
       activity: "Menimbang sampah plastik",
@@ -116,27 +169,69 @@ export default function MonitorRooms() {
     return configs[status];
   };
 
+  // WebSocket connection for real-time updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("Refreshing room status...");
-    }, 30000);
-    return () => clearInterval(interval);
+    // Connect to admin WebSocket
+    adminWebSocketService.connect();
+
+    // Register message handlers
+    adminWebSocketService.onMessage("room_update", (data) => {
+      setRooms(prevRooms => {
+        return prevRooms.map(room => {
+          if (room.code === data.roomCode) {
+            return {
+              ...room,
+              status: data.status,
+              isOnline: data.connected, // Map connected to isOnline
+              connected: data.connected,
+              issue: data.issue,
+              bottleCount: data.bottleCount || room.bottleCount,
+              points: data.points || room.points,
+              lastActivity: data.lastActivity,
+              lastSeen: data.lastActivity, // Update lastSeen with latest activity
+              currentUser: data.currentUser ? {
+                name: data.currentUser,
+                activity: data.status === "in_use" ? "Active session" : "Idle",
+                startTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              } : undefined,
+              location: data.location || room.location
+            };
+          }
+          return room;
+        });
+      });
+    });
+
+    // Cleanup on unmount
+    return () => {
+      adminWebSocketService.offMessage("room_update");
+      adminWebSocketService.disconnect();
+    };
   }, []);
 
   return (
     <div className="space-y-6 animate-in fade-in-0 duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Monitor className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-            </div>
-            Monitoring Ruangan
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Pantau status ruangan dan aktivitas pengguna
-          </p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleBackToDashboard}
+            className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            title="Kembali ke Dashboard"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Monitor className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              Monitoring Ruangan
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Pantau status ruangan dan aktivitas pengguna
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
@@ -191,6 +286,14 @@ export default function MonitorRooms() {
                     })}
                     {getStatusConfig(room.status).label}
                   </span>
+                  {/* Connection status indicator */}
+                  <div className="flex items-center gap-1" title={room.isOnline ? "IoT Online" : "IoT Offline"}>
+                    {room.isOnline ? (
+                      <Wifi className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-500" />
+                    )}
+                  </div>
                   <button
                     onClick={() => setSelectedRoom(room)}
                     className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -216,6 +319,26 @@ export default function MonitorRooms() {
                     </div>
                     <span className="text-xs text-gray-500">
                       {room.currentUser.startTime}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Real-time Stats */}
+              {room.bottleCount !== undefined && (
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Bottles: {room.bottleCount}</span>
+                  <span>Points: {room.points || 0}</span>
+                </div>
+              )}
+
+              {/* Issue Alert */}
+              {room.issue && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                    <span className="text-xs text-red-700 dark:text-red-400">
+                      {room.issue}
                     </span>
                   </div>
                 </div>
@@ -292,10 +415,25 @@ export default function MonitorRooms() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {getStatusConfig(selectedRoom.status).label}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {getStatusConfig(selectedRoom.status).label}
+                    </p>
+                    {selectedRoom.isOnline ? (
+                      <Wifi className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-500" />
+                    )}
+                  </div>
                 </div>
+                {selectedRoom.lastSeen && (
+                  <div>
+                    <p className="text-sm text-gray-500">Last Seen</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {new Date(selectedRoom.lastSeen).toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-gray-500">
                     Maintenance Terakhir
@@ -306,6 +444,31 @@ export default function MonitorRooms() {
                     ).toLocaleDateString("id-ID")}
                   </p>
                 </div>
+                {selectedRoom.bottleCount !== undefined && (
+                  <div>
+                    <p className="text-sm text-gray-500">Real-time Stats</p>
+                    <div className="flex gap-4">
+                      <span className="text-sm">Bottles: {selectedRoom.bottleCount}</span>
+                      <span className="text-sm">Points: {selectedRoom.points || 0}</span>
+                    </div>
+                  </div>
+                )}
+                {selectedRoom.lastActivity && (
+                  <div>
+                    <p className="text-sm text-gray-500">Last Activity</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {new Date(selectedRoom.lastActivity).toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                )}
+                {selectedRoom.issue && (
+                  <div>
+                    <p className="text-sm text-gray-500">Issue</p>
+                    <p className="font-medium text-red-600 dark:text-red-400">
+                      {selectedRoom.issue}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

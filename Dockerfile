@@ -1,52 +1,53 @@
-# Multi-stage build for the entire application using Bun
-FROM oven/bun:1 AS base
+# --- STAGE 1: Build Frontend (Client) ---
+# Kita sebut stage ini "client-builder"
+FROM oven/bun:latest AS client-builder
 
-# Set working directory
+# Tentukan folder kerja di dalam container
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY bun.lock ./
+# Salin package.json dan lockfile dari folder client
+COPY client/package.json ./client/
+COPY client/bun.lock ./client/
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies HANYA untuk client
+RUN cd client && bun install
 
-# Copy source code
-COPY . .
+# Salin sisa kode dari folder client
+COPY client/ ./client/
 
-# Build the client
+# Jalankan perintah build dari client (ini akan membuat client/build)
 RUN cd client && bun run build
 
-# Production stage
-FROM oven/bun:1 AS production
+# --- STAGE 2: Build Server (Final) ---
+# Kita mulai dari image Bun yang baru dan bersih
+FROM oven/bun:latest
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y curl postgresql-client && rm -rf /var/lib/apt/lists/*
-
-# Create app user
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-
-# Set working directory
 WORKDIR /app
 
-# Copy built application
-COPY --from=base --chown=nodejs:nodejs /app/server ./server
-COPY --from=base --chown=nodejs:nodejs /app/client/build ./client/build
-COPY --from=base --chown=nodejs:nodejs /app/package*.json ./
-COPY --from=base --chown=nodejs:nodejs /app/bun.lock ./
+# Salin package.json dan lockfile dari server (root)
+COPY package.json ./
+COPY bun.lock ./
 
-# Install production dependencies
-RUN bun install --frozen-lockfile --production
+# Install dependencies HANYA untuk server (produksi)
+RUN bun install --production
 
-# Switch to non-root user
-USER nodejs
+# Salin client package.json untuk SSR deps
+COPY client/package.json ./client/
+COPY client/bun.lock ./client/
 
-# Expose ports
-EXPOSE 3004 5173
+# Install client dependencies for SSR
+RUN cd client && bun install 
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3004/ || exit 1
+# Salin kode server Hono Anda
+COPY server/ ./server/
 
-# Start the application
-CMD ["bun", "run", "server"]
+# Ambil hasil build client dari Stage 1
+# Ini adalah bagian "sihir"-nya
+COPY --from=client-builder /app/client/build ./client/build
+
+# Expose port yang digunakan Hono (port internal)
+EXPOSE 3004
+
+# Perintah untuk menjalankan server Hono Anda
+# Ini akan menjalankan "bun run start"
+CMD ["bun", "run", "start"]
