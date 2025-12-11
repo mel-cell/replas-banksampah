@@ -1,15 +1,9 @@
 import { Hono } from "hono";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
 import * as schema from "../db/schema";
 import { authMiddleware } from "../lib/auth";
 import { eq, and, desc } from "drizzle-orm";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const db = drizzle(pool, { schema });
+import { db } from "../lib/db";
+import { redisClient, connectRedis } from "../lib/redis";
 const conversion = new Hono<{ Variables: { session: any } }>();
 
 // Middleware to get session
@@ -136,8 +130,16 @@ conversion.get("/request", async (c) => {
   });
 });
 
-// Get available payment methods
+// Get available payment methods (cached 24h)
 conversion.get("/payment-methods", async (c) => {
+  await connectRedis();
+  const cacheKey = "payment_methods";
+
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    return c.json({ methods: JSON.parse(cached) });
+  }
+
   const methods = await db
     .select({
       id: schema.paymentMethod.id,
@@ -149,6 +151,7 @@ conversion.get("/payment-methods", async (c) => {
     .from(schema.paymentMethod)
     .where(eq(schema.paymentMethod.isActive, true));
 
+  await redisClient.setEx(cacheKey, 86400, JSON.stringify(methods)); // 24h TTL
   return c.json({ methods });
 });
 

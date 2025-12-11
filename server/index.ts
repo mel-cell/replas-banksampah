@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import { serveStatic } from 'hono/bun';
 import { reactRouter } from 'remix-hono/handler';
 // @ts-ignore
@@ -8,12 +9,14 @@ import { authRoutes, authMiddleware } from "./lib/auth";
 import { web } from "./services/web";
 import { iot } from "./services/iot";
 import { admin } from "./services/admin";
+import { conversion } from "./services/conversion";
 import { docs } from "./docs";
 import "./services/mqtt"; // Initialize MQTT service
 import { Pool } from 'pg';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { websocketService } from './services/websocket'; 
+import { websocketService } from './services/websocket';
+import mqttService from './services/mqtt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,8 +34,14 @@ app.use("/*", cors({
   allowHeaders: ["Content-Type", "Authorization"],
 }));
 
+app.use('*', logger());
+
 app.get("/api/health", (c) => {
   return c.text("OK", 200);
+});
+
+app.get("/api/welcome", (c) => {
+  return c.json({ message: "Welcome to the API Service!" });
 });
 
 websocketService.createWebSocketServer(app);
@@ -48,6 +57,9 @@ app.route("/api/iot", iot);
 
 // Mount admin APIs
 app.route("/api/admin", admin);
+
+// Mount conversion APIs
+app.route("/api/conversion", conversion);
 
 // Mount API documentation
 app.route("/api/docs", docs);
@@ -66,6 +78,16 @@ app.get("/api/conection", async (c) => {
       500
     );
   }
+});
+
+// MQTT connection status (public endpoint)
+app.get("/api/mqtt-status", async (c) => {
+  const isConnected = mqttService.isConnected();
+  return c.json({
+    mqttConnected: isConnected,
+    status: isConnected ? "connected" : "disconnected",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Serve static assets from Remix build (JS, CSS, images, etc.)

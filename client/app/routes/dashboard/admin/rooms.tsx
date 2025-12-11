@@ -134,11 +134,6 @@ export default function MonitorRooms() {
     bottleCount: 0,
     points: 0,
     lastActivity: new Date().toISOString(),
-    currentUser: {
-      name: "Ahmad Surya",
-      activity: "Menimbang sampah plastik",
-      startTime: "14:30",
-    },
     lastMaintenance: "2024-01-15",
   };
 
@@ -305,7 +300,7 @@ export default function MonitorRooms() {
               </div>
 
               {/* Current User */}
-              {room.currentUser && (
+              {room.currentUser ? (
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-blue-600" />
@@ -320,6 +315,13 @@ export default function MonitorRooms() {
                     <span className="text-xs text-gray-500">
                       {room.currentUser.startTime}
                     </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-400" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">No active user</p>
                   </div>
                 </div>
               )}

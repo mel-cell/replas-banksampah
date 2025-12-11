@@ -1,15 +1,9 @@
 import { Hono } from "hono";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
 import * as schema from "../db/schema";
 import { authMiddleware } from "../lib/auth";
 import { eq, desc, sql } from "drizzle-orm";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const db = drizzle(pool, { schema });
+import { db } from "../lib/db";
+import { redisClient, connectRedis } from "../lib/redis";
 
 const web = new Hono<{ Variables: { session: any } }>();
 
@@ -69,37 +63,56 @@ web.get("/dashboard/user", async (c) => {
   });
 });
 
-// Admin Dashboard
+// Admin Dashboard (cached stats 5-10min, activities 24h)
 web.get("/dashboard/admin", async (c) => {
   const payload = c.get("jwtPayload");
+  await connectRedis();
+
   // Check if admin
   const user = await db.select().from(schema.users).where(eq(schema.users.id, payload.userId)).limit(1);
   if (user[0]?.role !== "admin") return c.json({ error: "Forbidden" }, 403);
 
-  // Stats
-  const totalUsers = await db.$count(schema.users);
-  const totalConversions = await db.$count(schema.conversionRequests);
-  const revenueToday = await db.select({ sum: sql`SUM(${schema.laporanPenjualan.totalAmount})` })
-    .from(schema.laporanPenjualan)
-    .where(sql`DATE(${schema.laporanPenjualan.saleDate}) = CURRENT_DATE`);
-
-  // Recent activities
-  const activities = await db.select({
-    id: schema.bottleCollections.id,
-    user: schema.users.fullname,
-    action: sql`'Menukarkan botol'`,
-    details: sql`CONCAT(${schema.bottleCollections.totalBottles}, ' botol - Poin: +', ${schema.bottleCollections.pointsAwarded})`,
-    timestamp: schema.bottleCollections.createdAt,
-  }).from(schema.bottleCollections)
-  .innerJoin(schema.users, eq(schema.bottleCollections.userId, schema.users.id))
-  .orderBy(desc(schema.bottleCollections.createdAt)).limit(5);
-
-  return c.json({
-    stats: {
+  // Stats (cached 10min)
+  const statsCacheKey = "admin_stats";
+  let stats: any = await redisClient.get(statsCacheKey);
+  if (stats) {
+    stats = JSON.parse(stats);
+  } else {
+    const totalUsers = await db.$count(schema.users);
+    const totalConversions = await db.$count(schema.conversionRequests);
+    const revenueTodayQuery = await db.select({ sum: sql`SUM(${schema.laporanPenjualan.totalAmount})` })
+      .from(schema.laporanPenjualan)
+      .where(sql`DATE(${schema.laporanPenjualan.saleDate}) = CURRENT_DATE`);
+    const statsObj = {
       totalUsers,
       totalConversions,
-      revenueToday: revenueToday[0]?.sum || 0,
-    },
+      revenueToday: Number(revenueTodayQuery[0]?.sum || 0),
+    };
+    await redisClient.setEx(statsCacheKey, 600, JSON.stringify(statsObj)); // 10min TTL
+    stats = statsObj;
+  }
+
+  // Recent activities (cached 24h)
+  const activitiesCacheKey = "admin_activities";
+  let activities: any = await redisClient.get(activitiesCacheKey);
+  if (activities) {
+    activities = JSON.parse(activities);
+  } else {
+    const activitiesData = await db.select({
+      id: schema.bottleCollections.id,
+      user: schema.users.fullname,
+      action: sql`'Menukarkan botol'`,
+      details: sql`CONCAT(${schema.bottleCollections.totalBottles}, ' botol - Poin: +', ${schema.bottleCollections.pointsAwarded})`,
+      timestamp: schema.bottleCollections.createdAt,
+    }).from(schema.bottleCollections)
+    .innerJoin(schema.users, eq(schema.bottleCollections.userId, schema.users.id))
+    .orderBy(desc(schema.bottleCollections.createdAt)).limit(5);
+    await redisClient.setEx(activitiesCacheKey, 86400, JSON.stringify(activitiesData)); // 24h TTL
+    activities = activitiesData;
+  }
+
+  return c.json({
+    stats,
     activities,
   });
 });
@@ -693,7 +706,8 @@ web.get("/dashboard/admin/rooms", async (c) => {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
-  const rooms = await db.select({
+  // Fetch rooms with current users in one query (fix N+1)
+  const roomsWithUsers = await db.select({
     id: schema.rooms.id,
     code: schema.rooms.code,
     name: schema.rooms.name,
@@ -702,38 +716,23 @@ web.get("/dashboard/admin/rooms", async (c) => {
     isActive: schema.rooms.isActive,
     currentUserId: schema.rooms.currentUserId,
     createdAt: schema.rooms.createdAt,
+    currentUser: {
+      name: schema.users.fullname,
+      activity: sql`'Menggunakan mesin'`,
+      startTime: sql`NOW()::time`,
+    },
   })
   .from(schema.rooms)
+  .leftJoin(schema.users, eq(schema.rooms.currentUserId, schema.users.id))
   .orderBy(schema.rooms.createdAt);
 
-  // Get current users for rooms that are in use
-  const roomsWithUsers = await Promise.all(
-    rooms.map(async (room) => {
-      let currentUser = null;
-      if (room.currentUserId) {
-        const user = await db.select({
-          name: schema.users.fullname,
-          activity: sql`'Menggunakan mesin'`,
-          startTime: sql`NOW()::time`,
-        })
-        .from(schema.users)
-        .where(eq(schema.users.id, room.currentUserId))
-        .limit(1);
+  const rooms = roomsWithUsers.map(room => ({
+    ...room,
+    currentUser: room.currentUserId ? room.currentUser : null,
+    lastMaintenance: new Date().toISOString().split('T')[0], // Placeholder
+  }));
 
-        if (user.length > 0) {
-          currentUser = user[0];
-        }
-      }
-
-      return {
-        ...room,
-        currentUser,
-        lastMaintenance: new Date().toISOString().split('T')[0], // Placeholder
-      };
-    })
-  );
-
-  return c.json({ rooms: roomsWithUsers });
+  return c.json({ rooms });
 });
 
 // Create Room (Admin)
