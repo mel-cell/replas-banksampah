@@ -74,14 +74,16 @@ export default function StudentProfile() {
     achievementUpdates: true,
   });
 
-  // Load dashboard data on component mount
+  // Load dashboard data on component mount and poll every 5s
   useEffect(() => {
     loadDashboardData();
+    const interval = setInterval(() => loadDashboardData(true), 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       setError(null);
 
       const token = localStorage.getItem("token");

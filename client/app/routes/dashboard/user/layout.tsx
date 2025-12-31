@@ -8,6 +8,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function UserDashboardLayout() {
   const location = useLocation();
@@ -91,7 +92,18 @@ export default function UserDashboardLayout() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto p-4 pb-24 relative z-0">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Floating Bottom Navigation */}
@@ -216,7 +228,18 @@ export default function UserDashboardLayout() {
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white to-transparent dark:from-gray-900 pointer-events-none opacity-50"></div>
 
         <div className="p-8 max-w-7xl mx-auto">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
