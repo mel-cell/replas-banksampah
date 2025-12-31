@@ -60,14 +60,14 @@ export default function UserDashboardLayout() {
     return (
       <div className="flex flex-col h-screen bg-stone-50 dark:bg-gray-950 relative overflow-hidden">
         {/* Abstract Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-emerald-500 opacity-20 blur-[100px]"></div>
 
         {/* Header */}
-        <header className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 p-4 sticky top-0">
+        <header className="z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 p-4 sticky top-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white">
+              <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white">
                 <User className="w-5 h-5" />
               </div>
               <div>
@@ -153,16 +153,16 @@ export default function UserDashboardLayout() {
       {/* Sidebar - Glassmorphism & Dark Green */}
       <aside className="relative w-72 bg-[#0a2f1c] text-white p-6 flex flex-col shadow-2xl z-20 overflow-hidden">
         {/* Background Gradients */}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-black/40 z-0"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-linear-to-b from-transparent to-black/40 z-0"></div>
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl z-0"></div>
 
         <div className="relative z-10 flex flex-col h-full">
           <div className="mb-10 pl-2">
             <h2 className="text-2xl font-bold flex items-center gap-3 tracking-tight">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/50 text-white">
+              <div className="w-10 h-10 bg-linear-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/50 text-white">
                 <User className="w-5 h-5" />
               </div>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-emerald-200">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-white to-emerald-200">
                 Replas
               </span>
             </h2>
@@ -198,7 +198,7 @@ export default function UserDashboardLayout() {
                   </span>
 
                   {/* Hover shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </Link>
               );
             })}
@@ -224,8 +224,8 @@ export default function UserDashboardLayout() {
       {/* Halaman isi */}
       <main className="flex-1 overflow-y-auto relative z-10">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white to-transparent dark:from-gray-900 pointer-events-none opacity-50"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-full h-64 bg-linear-to-b from-white to-transparent dark:from-gray-900 pointer-events-none opacity-50"></div>
 
         <div className="p-8 max-w-7xl mx-auto">
           <AnimatePresence mode="wait">

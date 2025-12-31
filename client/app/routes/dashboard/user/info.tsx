@@ -150,7 +150,7 @@ export default function UserInfo() {
       {/* Hero Header */}
       <motion.div
         variants={item}
-        className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-950 text-white shadow-2xl"
+        className="relative rounded-3xl overflow-hidden bg-linear-to-br from-emerald-900 via-green-800 to-emerald-950 text-white shadow-2xl"
       >
         <div className="absolute top-0 right-0 p-12 opacity-10">
           <Recycle className="w-64 h-64" />
@@ -204,7 +204,7 @@ export default function UserInfo() {
                 </div>
 
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-xs font-black text-gray-200 dark:text-gray-700 absolute top-6 right-6 text-4xl select-none">
+                  <span className="font-black text-gray-200 dark:text-gray-700 absolute top-6 right-6 text-4xl select-none">
                     0{step.step}
                   </span>
                   {step.title}
@@ -266,7 +266,7 @@ export default function UserInfo() {
 
       {/* FAQ Compact */}
       <motion.div variants={item}>
-        <Card className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 border-none shadow-inner">
+        <Card className="bg-linear-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 border-none shadow-inner">
           <CardHeader>
             <div className="flex items-center gap-2 mb-2">
               <HelpCircle className="w-5 h-5 text-emerald-500" />

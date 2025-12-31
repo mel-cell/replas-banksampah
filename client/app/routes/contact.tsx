@@ -60,7 +60,7 @@ export default function Contact() {
 
       {/* Background Pattern for the whole page */}
       <div className="absolute inset-0 top-[400px] z-0 opacity-40 mix-blend-multiply dark:mix-blend-normal pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[40px_40px]"></div>
         <div className="absolute right-0 bottom-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]"></div>
         <div className="absolute left-0 bottom-1/3 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px]"></div>
       </div>
@@ -68,13 +68,13 @@ export default function Contact() {
       {/* Hero Section - UPDATED: Emerald Gradient instead of Black */}
       <section className="relative pt-32 pb-48 lg:pt-40 lg:pb-64 overflow-hidden">
         {/* Main Hero Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-emerald-900 via-teal-900 to-slate-900"></div>
 
         {/* Background Image with better blending */}
         <div className="absolute inset-0 bg-[url('/hero-new.png')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
 
         {/* Soft Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-stone-50/90 dark:to-gray-950/90"></div>
+        <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-stone-50/90 dark:to-gray-950/90"></div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-full mb-6 backdrop-blur-md border border-white/20 shadow-lg animate-fade-in-up">
@@ -95,7 +95,7 @@ export default function Contact() {
           <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl shadow-emerald-900/10 overflow-hidden border border-gray-100 dark:border-gray-800 backdrop-blur-sm">
             <div className="grid lg:grid-cols-5 min-h-[700px]">
               {/* Contact Information (Left - 2/5 width) */}
-              <div className="lg:col-span-2 p-10 md:p-14 bg-gradient-to-br from-emerald-600 to-teal-700 text-white relative overflow-hidden flex flex-col justify-between">
+              <div className="lg:col-span-2 p-10 md:p-14 bg-linear-to-br from-emerald-600 to-teal-700 text-white relative overflow-hidden flex flex-col justify-between">
                 {/* Abstract Shapes */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 mix-blend-soft-light"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-3xl -ml-16 -mb-16 mix-blend-overlay"></div>

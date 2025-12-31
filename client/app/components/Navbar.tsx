@@ -61,7 +61,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center flex-shrink-0">
+            <div className="flex items-center shrink-0">
               <Link to="/" className="flex items-center gap-3 group">
                 <img
                   src="/logo_3.webp"
@@ -139,7 +139,7 @@ export default function Navbar() {
               </button>
 
               <div
-                className={`h-6 w-[1px] mx-1 ${!scrolled && isDarkHeropage ? "bg-white/30" : "bg-gray-200 dark:bg-gray-700"}`}
+                className={`h-6 w-px mx-1 ${!scrolled && isDarkHeropage ? "bg-white/30" : "bg-gray-200 dark:bg-gray-700"}`}
               ></div>
 
               <Link to="/login">

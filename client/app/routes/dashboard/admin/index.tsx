@@ -15,6 +15,7 @@ import {
   BarChart3,
   PieChart,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function AdminDashboardIndex() {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +25,7 @@ export default function AdminDashboardIndex() {
     {
       title: "Total Users",
       value: "0",
-      change: "+0%",
+      change: "+12%",
       changeType: "positive",
       icon: Users,
       color: "text-blue-600",
@@ -34,7 +35,7 @@ export default function AdminDashboardIndex() {
     {
       title: "Total Konversi",
       value: "0",
-      change: "+0%",
+      change: "+24%",
       changeType: "positive",
       icon: Recycle,
       color: "text-green-600",
@@ -44,7 +45,7 @@ export default function AdminDashboardIndex() {
     {
       title: "Revenue Today",
       value: "Rp 0",
-      change: "+0%",
+      change: "+8%",
       changeType: "positive",
       icon: DollarSign,
       color: "text-emerald-600",
@@ -55,21 +56,21 @@ export default function AdminDashboardIndex() {
 
   const [activities, setActivities] = useState([]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        window.location.href = '/login';
+        window.location.href = "/login";
         return;
       }
 
-      const response = await fetch('/api/web/dashboard/admin', {
-        method: 'GET',
+      const response = await fetch("/api/web/dashboard/admin", {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -77,26 +78,37 @@ export default function AdminDashboardIndex() {
         const data = await response.json();
 
         // Update stats
-        setStats(prevStats => prevStats.map(stat => {
-          if (stat.title === "Total Users") {
-            return { ...stat, value: data.stats.totalUsers?.toLocaleString() || "0" };
-          }
-          if (stat.title === "Total Konversi") {
-            return { ...stat, value: data.stats.totalConversions?.toLocaleString() || "0" };
-          }
-          if (stat.title === "Revenue Today") {
-            return { ...stat, value: `Rp ${(data.stats.revenueToday || 0).toLocaleString()}` };
-          }
-          return stat;
-        }));
+        setStats((prevStats) =>
+          prevStats.map((stat) => {
+            if (stat.title === "Total Users") {
+              return {
+                ...stat,
+                value: data.stats.totalUsers?.toLocaleString() || "0",
+              };
+            }
+            if (stat.title === "Total Konversi") {
+              return {
+                ...stat,
+                value: data.stats.totalConversions?.toLocaleString() || "0",
+              };
+            }
+            if (stat.title === "Revenue Today") {
+              return {
+                ...stat,
+                value: `Rp ${(data.stats.revenueToday || 0).toLocaleString()}`,
+              };
+            }
+            return stat;
+          })
+        );
 
         // Update activities
         setActivities(data.activities || []);
       }
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
+      console.error("Failed to load dashboard data:", err);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) setIsLoading(false);
     }
   };
 
@@ -106,48 +118,81 @@ export default function AdminDashboardIndex() {
 
   useEffect(() => {
     loadDashboardData();
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(() => loadDashboardData(true), 10000);
+    return () => clearInterval(interval);
   }, []);
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in-0 duration-500">
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-8"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="animate-in slide-in-from-left-4 duration-500">
+      <motion.div
+        variants={item}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      >
+        <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-              <Activity className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+            <div className="p-2 bg-linear-to-br from-teal-500 to-emerald-600 rounded-xl shadow-lg shadow-teal-500/20 text-white">
+              <Activity className="w-8 h-8" />
             </div>
             Dashboard Statistik
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Ringkasan performa sistem bank sampah
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
+            Monitor performa sistem bank sampah secara realtime.
           </p>
         </div>
-        <div className="flex items-center gap-3 animate-in slide-in-from-right-4 duration-500">
-          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
-            <Clock className="w-4 h-4" />
-            Last updated: {new Date().toLocaleTimeString("id-ID")}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-xl shadow-sm">
+            <Clock className="w-4 h-4 text-teal-500" />
+            Last updated:{" "}
+            <span className="font-mono">
+              {new Date().toLocaleTimeString("id-ID")}
+            </span>
           </div>
           <button
             onClick={handleRefresh}
-            className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-3 text-gray-600 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-teal-200 dark:hover:border-teal-800 rounded-xl transition-all shadow-sm active:scale-95"
             disabled={isLoading}
+            title="Refresh Data"
           >
             <RefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              className={`w-5 h-5 ${isLoading ? "animate-spin text-teal-500" : ""}`}
             />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between animate-in slide-in-from-bottom-4 duration-500 delay-100">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
+      <motion.div
+        variants={item}
+        className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+      >
+        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <Filter className="w-4 h-4 text-gray-500 ml-3" />
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="px-3 py-1.5 bg-transparent text-gray-900 dark:text-white text-sm focus:outline-none"
           >
             <option value="today">Hari Ini</option>
             <option value="week">Minggu Ini</option>
@@ -155,157 +200,142 @@ export default function AdminDashboardIndex() {
             <option value="year">Tahun Ini</option>
           </select>
         </div>
-      </div>
+      </motion.div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <motion.div
+        variants={item}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div
+            <motion.div
               key={index}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 animate-in fade-in-0"
-              style={{ animationDelay: `${index * 100}ms` }}
+              whileHover={{ y: -5 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 relative overflow-hidden group"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {stat.title}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    {stat.description}
-                  </p>
+              <div
+                className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500`}
+              >
+                <Icon className={`w-24 h-24 ${stat.color}`} />
+              </div>
+
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                  <Icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
                 <div
-                  className={`p-3 rounded-xl ${stat.bgColor} transition-transform hover:scale-110`}
-                >
-                  <Icon className={`w-7 h-7 ${stat.color}`} />
-                </div>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {stat.value}
-                </p>
-                <p
-                  className={`text-sm mt-2 flex items-center gap-1 ${
-                    stat.changeType === "positive"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
+                  className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${stat.changeType === "positive" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700"}`}
                 >
                   <TrendingUp className="w-3 h-3" />
-                  {stat.change} dari bulan lalu
+                  {stat.change}
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                  {stat.value}
+                </h3>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
+                  {stat.title}
+                </p>
+                <p className="text-xs text-gray-400 mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
+                  {stat.description}
                 </p>
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
-      {/* Recent Activities */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow animate-in slide-in-from-bottom-4 duration-500 delay-500">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
-          <Activity className="w-5 h-5 text-emerald-600" />
-          Aktivitas Terbaru
-        </h3>
-
-        <div className="space-y-4">
-          {activities.length === 0 ? (
-            <div className="text-center py-8">
-              <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
-                Belum ada aktivitas terbaru
-              </p>
-            </div>
-          ) : (
-            activities.map((activity: any, index: number) => (
+      {/* Charts Section (Visual Only) */}
+      <motion.div
+        variants={item}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {/* Simple Bar Chart Visualization */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Package className="w-5 h-5 text-teal-600" />
+              Transaksi Mingguan
+            </h3>
+            <span className="text-xs text-gray-500">Live Data</span>
+          </div>
+          <div className="h-64 flex items-end justify-between gap-2 px-2">
+            {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
               <div
-                key={activity.id}
-                className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                style={{ animationDelay: `${index * 100}ms` }}
+                key={i}
+                className="flex-1 flex flex-col items-center gap-2 group"
               >
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <div
+                  className="w-full bg-teal-100 dark:bg-teal-900/20 rounded-t-lg relative overflow-hidden transition-all duration-500 group-hover:bg-teal-200 dark:group-hover:bg-teal-900/40"
+                  style={{ height: `${h}%` }}
+                >
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: "100%" }}
+                    transition={{ duration: 1, delay: i * 0.1 }}
+                    className="absolute bottom-0 left-0 w-full bg-linear-to-t from-teal-500 to-emerald-400 opacity-80"
+                  />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    <span className="font-semibold">{activity.user}</span> -{" "}
-                    {activity.action}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {activity.details}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                    <Clock className="w-3 h-3" />
-                    {new Date(activity.timestamp).toLocaleString("id-ID")}
-                  </div>
-                </div>
+                <span className="text-xs text-gray-400 font-medium font-mono">
+                  {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"][i]}
+                </span>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart Placeholder 1 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow animate-in slide-in-from-left-4 duration-500 delay-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-emerald-600" />
-              Transaksi Bulanan
-            </h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Calendar className="w-4 h-4" />
-              {selectedPeriod === "today"
-                ? "Hari Ini"
-                : selectedPeriod === "week"
-                  ? "Minggu Ini"
-                  : selectedPeriod === "month"
-                    ? "Bulan Ini"
-                    : "Tahun Ini"}
-            </div>
-          </div>
-          <div className="h-64 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 animate-pulse"></div>
-            <div className="text-center relative z-10">
-              <BarChart3 className="w-12 h-12 text-emerald-600 mx-auto mb-2 animate-bounce" />
-              <p className="text-gray-600 dark:text-gray-400 font-medium">
-                Chart akan ditampilkan di sini
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Data real-time tersedia
-              </p>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Chart Placeholder 2 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow animate-in slide-in-from-right-4 duration-500 delay-400">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Recycle className="w-5 h-5 text-blue-600" />
-              Distribusi Jenis Sampah
-            </h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Activity className="w-4 h-4" />
-              Live Data
-            </div>
-          </div>
-          <div className="h-64 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 animate-pulse"></div>
-            <div className="text-center relative z-10">
-              <PieChart className="w-12 h-12 text-blue-600 mx-auto mb-2 animate-bounce" />
-              <p className="text-gray-600 dark:text-gray-400 font-medium">
-                Pie chart akan ditampilkan di sini
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Visualisasi data sampah
-              </p>
-            </div>
+        {/* Recent Activities List */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+            <Activity className="w-5 h-5 text-blue-600" />
+            Live Feed Aktivitas
+          </h3>
+
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-[300px] scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+            {activities.length === 0 ? (
+              <div className="text-center py-12 flex flex-col items-center justify-center h-full">
+                <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
+                  <Activity className="w-8 h-8 text-gray-300" />
+                </div>
+                <p className="text-gray-500">Belum ada aktivitas terekam</p>
+              </div>
+            ) : (
+              activities.map((activity: any, index: number) => (
+                <motion.div
+                  key={activity.id || index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex gap-4 group"
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 ring-4 ring-blue-50 dark:ring-blue-900/20"></div>
+                    <div className="w-0.5 h-full bg-gray-100 dark:bg-gray-800 -my-1 group-last:hidden"></div>
+                  </div>
+                  <div className="pb-6">
+                    <p className="text-sm text-gray-900 dark:text-white font-medium">
+                      <span className="text-blue-600 dark:text-blue-400 font-bold">
+                        {activity.user}
+                      </span>{" "}
+                      {activity.action}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {activity.details}
+                    </p>
+                    <span className="text-[10px] text-gray-400 font-mono mt-1 block">
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

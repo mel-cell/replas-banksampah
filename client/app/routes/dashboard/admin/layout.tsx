@@ -9,6 +9,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -62,14 +63,14 @@ export default function AdminLayout() {
     return (
       <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
         {/* Abstract Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
         <div className="absolute right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-teal-500 opacity-20 blur-[100px]"></div>
 
         {/* Header */}
-        <header className="relative z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4 sticky top-0">
+        <header className="z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4 sticky top-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow-lg shadow-slate-900/20 text-white">
+              <div className="w-10 h-10 bg-linear-to-br from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow-lg shadow-slate-900/20 text-white">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <div>
@@ -94,7 +95,18 @@ export default function AdminLayout() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto p-4 pb-24 relative z-0">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Floating Bottom Navigation */}
@@ -138,16 +150,16 @@ export default function AdminLayout() {
       {/* Sidebar - Deep Slate & Teal Accents */}
       <aside className="relative w-72 bg-[#0f172a] text-white p-6 flex flex-col shadow-2xl z-20 overflow-hidden">
         {/* Background Gradients */}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-black/40 z-0"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-linear-to-b from-transparent to-black/40 z-0"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl z-0"></div>
 
         <div className="relative z-10 flex flex-col h-full">
           <div className="mb-10 pl-2">
             <h2 className="text-2xl font-bold flex items-center gap-3 tracking-tight">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-900/50 text-white">
+              <div className="w-10 h-10 bg-linear-to-br from-teal-400 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-900/50 text-white">
                 <BarChart3 className="w-5 h-5" />
               </div>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-white to-slate-400">
                 Replas
               </span>
             </h2>
@@ -183,7 +195,7 @@ export default function AdminLayout() {
                   </span>
 
                   {/* Hover shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </Link>
               );
             })}
@@ -209,10 +221,21 @@ export default function AdminLayout() {
       {/* Halaman isi */}
       <main className="flex-1 overflow-y-auto relative z-10">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none"></div>
 
         <div className="p-8 max-w-7xl mx-auto">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

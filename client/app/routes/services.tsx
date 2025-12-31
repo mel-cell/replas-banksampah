@@ -40,10 +40,10 @@ export default function Services() {
 
       {/* Hero Section */}
       <section className="relative py-32 overflow-hidden bg-white dark:bg-gray-900">
-        <div className="absolute inset-0 top-0 left-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute inset-0 top-0 left-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-teal-500">
               Smart Services
             </span>{" "}
             for a Green Future
@@ -109,7 +109,7 @@ export default function Services() {
                     }) as string[]
                   ).map((feature: string, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0 text-xs font-bold">
                         {i + 1}
                       </div>
                       <span className="text-gray-700 dark:text-gray-300">
@@ -172,7 +172,7 @@ export default function Services() {
               <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-gray-800 bg-gray-900 p-2">
                 {/* Mockup Dashboard Preview */}
                 <div className="w-full aspect-video bg-gray-800 rounded-2xl overflow-hidden relative group cursor-pointer">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/50 to-gray-900 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-linear-to-br from-emerald-900/50 to-gray-900 flex items-center justify-center">
                     <img
                       src="/city.webp"
                       className="opacity-20 absolute inset-0 w-full h-full object-cover"

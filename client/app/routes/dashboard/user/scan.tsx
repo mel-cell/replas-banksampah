@@ -137,7 +137,7 @@ export default function UserScan() {
     <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-700 max-w-xl mx-auto">
       {/* Header */}
       <div className="text-center space-y-2 mb-8">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/30 text-white mb-4">
+        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-linear-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/30 text-white mb-4">
           <QrCode className="w-8 h-8" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -149,7 +149,7 @@ export default function UserScan() {
       </div>
 
       {/* Main Scanner Area */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gray-900 shadow-2xl ring-8 ring-gray-100 dark:ring-gray-800 aspect-[3/4] group">
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-gray-900 shadow-2xl ring-8 ring-gray-100 dark:ring-gray-800 aspect-3/4 group">
         {/* State: Initial */}
         {!qrState.isScanning && !qrState.scannedCode && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-[url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
@@ -177,7 +177,7 @@ export default function UserScan() {
 
               <Button
                 onClick={startQrScanning}
-                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 border-0 rounded-2xl shadow-xl shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-14 text-lg font-bold bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 border-0 rounded-2xl shadow-xl shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Mulai Kamera
               </Button>

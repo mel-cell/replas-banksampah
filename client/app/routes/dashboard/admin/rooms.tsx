@@ -1,596 +1,590 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Monitor,
-  Activity,
-  Users,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Wrench,
-  Eye,
-  QrCode,
-  Download,
-  Plus,
   Wifi,
   WifiOff,
-  ArrowLeft,
+  Signal,
+  MapPin,
+  Activity,
+  Box,
+  CreditCard,
+  QrCode,
+  User,
+  Clock,
+  AlertTriangle,
+  Terminal,
+  Cpu,
+  RefreshCw,
+  X,
 } from "lucide-react";
-import { QRCodeCanvas } from "qrcode.react";
-import { adminWebSocketService } from "../../../lib/adminWebsocket";
-import { useNavigate } from "react-router";
+import { QRCodeSVG } from "qrcode.react";
+import { motion, AnimatePresence } from "framer-motion";
 
-interface Room {
-  id: string;
-  code: string;
-  name: string;
-  location: string;
-  status: "idle" | "in_use" | "maintenance";
-  isActive: boolean;
-  isOnline?: boolean;
-  lastSeen?: string;
-  connected?: boolean;
-  issue?: string;
-  bottleCount?: number;
-  points?: number;
-  lastActivity?: string;
-  currentUser?: {
+interface MonitoringData {
+  device: {
+    id: string;
     name: string;
-    activity: string;
-    startTime: string;
+    code: string;
+    location: string;
+    status: "active" | "maintenance" | "error";
+    isOnline: boolean;
+    ipAddress: string;
+    firmware: string;
+    temperature: number;
+    uptime: string;
   };
-  lastMaintenance: string;
+  liveSession: {
+    isActive: boolean;
+    user?: {
+      name: string;
+      email: string;
+      avatar?: string;
+    };
+    startTime?: string;
+    duration?: string; // Calculated
+    bottlesInserted: number;
+    currentTransactionId?: string;
+  };
+  metrics: {
+    totalBottlesToday: number;
+    dailyActiveUsers: number;
+    storageLevel: number; // Percentage
+  };
+  logs: Array<{
+    id: string;
+    timestamp: string;
+    type: "info" | "warning" | "error" | "success";
+    message: string;
+  }>;
 }
 
-interface QrModalProps {
-  room: Room;
-  onClose: () => void;
-}
-
-export default function MonitorRooms() {
-  const navigate = useNavigate();
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+export default function AdminRooms() {
+  const [data, setData] = useState<MonitoringData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showQrModal, setShowQrModal] = useState(false);
 
-  // Get user role from localStorage
-  const getUserRole = () => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      try {
-        const userData = JSON.parse(user);
-        return userData.role;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  };
+  // Timer for duration calculation
+  const [sessionDuration, setSessionDuration] = useState("00:00:00");
 
-  const handleBackToDashboard = () => {
-    const role = getUserRole();
-    if (role === "admin") {
-      navigate("/dashboard/admin");
-    } else {
-      navigate("/dashboard/user");
-    }
-  };
-
-  // Fetch rooms from API
   useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        setIsLoading(true);
-        const token = localStorage.getItem("token");
-        const response = await fetch("/api/web/dashboard/admin/rooms", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Merge API data with real-time fields
-          const mergedRooms = (data.rooms || []).map((room: any) => ({
-            ...room,
-            connected: room.isOnline || false, // Use isOnline from database
-            bottleCount: 0,
-            points: 0,
-            lastActivity: room.lastSeen || new Date().toISOString(),
-            issue: room.isOnline === false ? "IoT device offline" : undefined,
-          }));
-          setRooms(mergedRooms);
-        } else {
-          console.error("Failed to fetch rooms");
-          // Use sample room if API fails
-          setRooms([sampleRoom]);
-        }
-      } catch (error) {
-        console.error("Error fetching rooms:", error);
-        // Use sample room if fetch fails
-        setRooms([sampleRoom]);
-      } finally {
-        setIsLoading(false);
-      }
+    // Initial Mock Data
+    const mockData: MonitoringData = {
+      device: {
+        id: "DEV-001",
+        name: "Smart Reverse Vending 01",
+        code: "RM-001",
+        location: "Lobby Utama - Gedung A",
+        status: "active",
+        isOnline: true,
+        ipAddress: "192.168.1.105",
+        firmware: "v2.1.0-stable",
+        temperature: 42,
+        uptime: "14d 2h 15m",
+      },
+      liveSession: {
+        isActive: false,
+        bottlesInserted: 0,
+      },
+      metrics: {
+        totalBottlesToday: 124,
+        dailyActiveUsers: 45,
+        storageLevel: 68,
+      },
+      logs: [
+        {
+          id: "1",
+          timestamp: new Date().toISOString(),
+          type: "info",
+          message: "System startup sequence completed",
+        },
+        {
+          id: "2",
+          timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+          type: "success",
+          message: "Batch upload: 12 transactions synced",
+        },
+      ],
     };
 
-    fetchRooms();
-  }, []);
+    setData(mockData);
+    setIsLoading(false);
 
-  const roomsToShow = rooms.filter(
-    (room) => filterStatus === "all" || room.status === filterStatus
-  );
+    // Simulation Loop
+    const interval = setInterval(() => {
+      setData((prev) => {
+        if (!prev) return prev;
 
-  const sampleRoom: Room = {
-    id: "R001",
-    code: "banksampah01",
-    name: "Ruang Monitoring Utama",
-    location: "SMKN 6 Malang",
-    status: "idle",
-    isActive: true,
-    connected: true,
-    bottleCount: 0,
-    points: 0,
-    lastActivity: new Date().toISOString(),
-    currentUser: {
-      name: "Ahmad Surya",
-      activity: "Menimbang sampah plastik",
-      startTime: "14:30",
-    },
-    lastMaintenance: "2024-01-15",
-  };
+        // Randomly toggle session state for demo purposes (every ~20s)
+        const shouldToggleSession = Math.random() > 0.95;
+        let newSession = { ...prev.liveSession };
+        let newLogs = [...prev.logs];
 
-  // Use sample if no real data
-  const displayRooms = rooms.length > 0 ? roomsToShow : [sampleRoom];
-
-  const getStatusConfig = (status: Room["status"]) => {
-    const configs = {
-      idle: {
-        color:
-          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        label: "Idle",
-        icon: CheckCircle,
-      },
-      in_use: {
-        color:
-          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        label: "In Use",
-        icon: Users,
-      },
-      maintenance: {
-        color:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-        label: "Maintenance",
-        icon: Wrench,
-      },
-    };
-    return configs[status];
-  };
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    // Connect to admin WebSocket
-    adminWebSocketService.connect();
-
-    // Register message handlers
-    adminWebSocketService.onMessage("room_update", (data) => {
-      setRooms((prevRooms) => {
-        return prevRooms.map((room) => {
-          if (room.code === data.roomCode) {
-            return {
-              ...room,
-              status: data.status,
-              isOnline: data.connected, // Map connected to isOnline
-              connected: data.connected,
-              issue: data.issue,
-              bottleCount: data.bottleCount || room.bottleCount,
-              points: data.points || room.points,
-              lastActivity: data.lastActivity,
-              lastSeen: data.lastActivity, // Update lastSeen with latest activity
-              currentUser: data.currentUser
-                ? {
-                    name: data.currentUser,
-                    activity:
-                      data.status === "in_use" ? "Active session" : "Idle",
-                    startTime: new Date().toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
-                  }
-                : undefined,
-              location: data.location || room.location,
+        if (shouldToggleSession) {
+          if (!newSession.isActive) {
+            // Start new session
+            newSession = {
+              isActive: true,
+              user: {
+                name: "Budi Santoso",
+                email: "budi.s@example.com",
+              },
+              startTime: new Date().toISOString(),
+              bottlesInserted: 0,
+              currentTransactionId: "TRX-" + Math.floor(Math.random() * 10000),
             };
+            newLogs.unshift({
+              id: Date.now().toString(),
+              timestamp: new Date().toISOString(),
+              type: "info",
+              message: "User login detected: Budi Santoso via QR Scan",
+            });
+          } else {
+            // End session
+            newLogs.unshift({
+              id: Date.now().toString(),
+              timestamp: new Date().toISOString(),
+              type: "success",
+              message: `Session ended. ${newSession.bottlesInserted} bottles processed.`,
+            });
+            newSession = { isActive: false, bottlesInserted: 0 };
           }
-          return room;
-        });
-      });
-    });
+        } else if (newSession.isActive) {
+          // Simulate bottle insertion
+          if (Math.random() > 0.7) {
+            newSession.bottlesInserted += 1;
+            // Occasionally log a warning
+            if (Math.random() > 0.95) {
+              newLogs.unshift({
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                type: "warning",
+                message: "Object detected but classification low confidence",
+              });
+            }
+          }
+        }
 
-    // Cleanup on unmount
-    return () => {
-      adminWebSocketService.offMessage("room_update");
-      adminWebSocketService.disconnect();
-    };
+        // Limit logs to 10
+        if (newLogs.length > 10) newLogs = newLogs.slice(0, 10);
+
+        return {
+          ...prev,
+          liveSession: newSession,
+          logs: newLogs,
+          metrics: {
+            ...prev.metrics,
+            storageLevel: Math.min(
+              100,
+              prev.metrics.storageLevel + (Math.random() > 0.98 ? 1 : 0)
+            ),
+          },
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, []);
+
+  // Calculate Duration
+  useEffect(() => {
+    if (!data?.liveSession.isActive || !data.liveSession.startTime) {
+      setSessionDuration("00:00:00");
+      return;
+    }
+
+    const timer = setInterval(() => {
+      const start = new Date(data.liveSession.startTime!).getTime();
+      const now = new Date().getTime();
+      const diff = now - start;
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setSessionDuration(
+        `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      );
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [data?.liveSession.isActive, data?.liveSession.startTime]);
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
+  if (isLoading || !data)
+    return (
+      <div className="p-8 text-center">Initializing Dashboard Link...</div>
+    );
 
   return (
-    <div className="space-y-6 animate-in fade-in-0 duration-500">
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900/50 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleBackToDashboard}
-            className="p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
-            title="Kembali ke Dashboard"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-100 dark:bg-indigo-500/10 rounded-xl">
-                <Monitor className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              Monitoring Ruangan
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 ml-1">
-              Pusat kendali status operasional mesin & ruangan
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              Live System
-            </span>
-          </div>
-        </div>
-      </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <motion.div variants={item}>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+              <Monitor className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            Device Command Center
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Real-time telemetry and control for {data.device.name}
+          </p>
+        </motion.div>
 
-      {/* Filter Bar */}
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {["all", "idle", "in_use", "maintenance"].map((status) => (
+        <motion.div variants={item} className="flex items-center gap-3">
           <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-              filterStatus === status
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-lg"
-                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+            onClick={() => setShowQrModal(true)}
+            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all flex items-center gap-2"
+          >
+            <QrCode className="w-4 h-4" />
+            Show Pairing QR
+          </button>
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border shadow-sm ${
+              data.device.isOnline
+                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
             }`}
           >
-            {status === "all"
-              ? "Semua Ruangan"
-              : getStatusConfig(status as any).label}
-          </button>
-        ))}
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${data.device.isOnline ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+            ></div>
+            <span className="font-semibold">
+              {data.device.isOnline ? "Online via MQTT" : "Connection Lost"}
+            </span>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Room Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-            <p className="text-slate-500 text-sm animate-pulse">
-              Menghubungkan ke satelit...
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {displayRooms.map((room) => {
-            const statusConfig = getStatusConfig(room.status);
-            const isOnline = room.isOnline;
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Column 1: Live Status & User */}
+        <motion.div variants={item} className="space-y-6">
+          {/* Session Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative">
+            {data.liveSession.isActive && (
+              <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500 animate-pulse"></div>
+            )}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Activity
+                    className={`w-5 h-5 ${data.liveSession.isActive ? "text-indigo-500" : "text-gray-400"}`}
+                  />
+                  Live Session
+                </h3>
+                <span
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
+                    data.liveSession.isActive
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                      : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                  }`}
+                >
+                  {data.liveSession.isActive ? "IN USE" : "IDLE"}
+                </span>
+              </div>
 
-            return (
-              <div
-                key={room.id}
-                className={`group relative overflow-hidden bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-300 ${
-                  isOnline
-                    ? "border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10"
-                    : "border-slate-200 dark:border-slate-800 opacity-80 grayscale-[0.5] hover:grayscale-0"
-                }`}
-              >
-                {/* Status Line Top */}
-                <div
-                  className={`absolute top-0 left-0 w-full h-1 ${isOnline ? "bg-gradient-to-r from-emerald-400 to-cyan-500" : "bg-slate-700"}`}
-                ></div>
-
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`p-3 rounded-2xl ${isOnline ? "bg-slate-100 dark:bg-slate-800" : "bg-slate-100 dark:bg-slate-800"}`}
-                      >
-                        {room.status === "in_use" ? (
-                          <Activity className="w-6 h-6 text-indigo-500 animate-bounce" />
-                        ) : (
-                          <Monitor
-                            className={`w-6 h-6 ${isOnline ? "text-slate-700 dark:text-slate-300" : "text-slate-400"}`}
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-tight mb-1">
-                          {room.name}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                          <span>ID: {room.code.substring(0, 6)}...</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            {isOnline ? (
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                            ) : (
-                              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                            )}
-                            {isOnline ? "ONLINE" : "OFFLINE"}
-                          </span>
-                        </div>
-                      </div>
+              {data.liveSession.isActive ? (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+                      {data.liveSession.user?.name.charAt(0)}
                     </div>
-
-                    <button
-                      onClick={() => setSelectedRoom(room)}
-                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-indigo-500 transition-colors"
-                    >
-                      <Eye className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Metrics Grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                      <p className="text-xs text-slate-500 mb-1">Total Botol</p>
-                      <p className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1">
-                        {room.bottleCount || 0}
-                        <span className="text-xs font-normal text-slate-400">
-                          pcs
-                        </span>
-                      </p>
-                    </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                      <p className="text-xs text-slate-500 mb-1">Poin</p>
-                      <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                        +{room.points || 0}
-                      </p>
+                    <div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Current User
+                      </div>
+                      <div className="font-bold text-gray-900 dark:text-white">
+                        {data.liveSession.user?.name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {data.liveSession.user?.email}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Current Activity / Status */}
-                  <div className="space-y-3">
-                    {room.currentUser ? (
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                          {room.currentUser.name.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                            {room.currentUser.name}
-                          </p>
-                          <p className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-                            <Activity className="w-3 h-3" /> Sedang Menggunakan
-                          </p>
-                        </div>
-                        <span className="text-xs font-mono text-slate-500">
-                          {room.currentUser.startTime}
-                        </span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl">
+                      <div className="text-blue-600 dark:text-blue-400 mb-1">
+                        <Clock className="w-5 h-5 mx-auto" />
                       </div>
-                    ) : (
-                      <div
-                        className={`flex items-center gap-2 p-3 rounded-xl border ${
-                          statusConfig.label === "Maintenance"
-                            ? "bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                            : "bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800 text-slate-500"
-                        }`}
-                      >
-                        {React.createElement(statusConfig.icon, {
-                          className: "w-4 h-4",
-                        })}
-                        <span className="text-sm font-medium">
-                          {getStatusConfig(room.status).label} Mode
-                        </span>
+                      <div className="text-2xl font-mono font-bold text-gray-900 dark:text-white">
+                        {sessionDuration}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Footer Actions */}
-                  <div className="flex items-center gap-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={() => {
-                        setSelectedRoom(room);
-                        setShowQrModal(true);
-                      }}
-                      className="flex-1 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <QrCode className="w-3.5 h-3.5" /> Show QR
-                    </button>
-                    {room.issue && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-semibold rounded-lg">
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        Error
+                      <div className="text-xs text-gray-500">Duration</div>
+                    </div>
+                    <div className="text-center p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl">
+                      <div className="text-emerald-600 dark:text-emerald-400 mb-1">
+                        <Box className="w-5 h-5 mx-auto" />
                       </div>
-                    )}
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {data.liveSession.bottlesInserted}
+                      </div>
+                      <div className="text-xs text-gray-500">Bottles</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      {selectedRoom && !showQrModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {selectedRoom.name}
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-2 mt-1">
-                    <span className="w-2 h-2 rounded-full bg-slate-300"></span>{" "}
-                    {selectedRoom.location}
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-200 dark:border-gray-700">
+                    <User className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No user is currently using the device
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Waiting for scan...
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedRoom(null)}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-                >
-                  <XCircle className="w-6 h-6 text-slate-400" />
-                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Metrics Card */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                Daily Total
               </div>
-
-              <div className="space-y-6">
-                {/* Connection Card */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                      Status Koneksi
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full ${selectedRoom.isOnline ? "bg-emerald-500" : "bg-red-500"}`}
-                      ></span>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {selectedRoom.isOnline
-                          ? "Terhubung (Online)"
-                          : "Terputus (Offline)"}
-                      </span>
-                    </div>
-                  </div>
-                  {selectedRoom.isOnline ? (
-                    <Wifi className="w-6 h-6 text-emerald-500" />
-                  ) : (
-                    <WifiOff className="w-6 h-6 text-red-500" />
-                  )}
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {data.metrics.totalBottlesToday}
+              </div>
+              <div className="text-xs text-emerald-500 flex items-center gap-1 mt-1">
+                <Activity className="w-3 h-3" /> +12% vs yesterday
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                Storage Bin
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {data.metrics.storageLevel}%
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                    <p className="text-xs text-slate-500 mb-1">Last Seen</p>
-                    <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {selectedRoom.lastSeen
-                        ? new Date(selectedRoom.lastSeen).toLocaleTimeString(
-                            "id-ID"
-                          )
-                        : "-"}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                    <p className="text-xs text-slate-500 mb-1">Maintenance</p>
-                    <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {selectedRoom.lastMaintenance
-                        ? new Date(
-                            selectedRoom.lastMaintenance
-                          ).toLocaleDateString("id-ID")
-                        : "-"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Realtime Stats */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-indigo-500" /> Statistik
-                    Sesi Ini
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-emerald-50 dark:bg-emerald-500/10 p-4 rounded-2xl text-center">
-                      <span className="block text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {selectedRoom.bottleCount || 0}
-                      </span>
-                      <span className="text-xs text-emerald-700/60 dark:text-emerald-400/60 font-medium">
-                        Botol Masuk
-                      </span>
-                    </div>
-                    <div className="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-2xl text-center">
-                      <span className="block text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                        +{selectedRoom.points || 0}
-                      </span>
-                      <span className="text-xs text-indigo-700/60 dark:text-indigo-400/60 font-medium">
-                        Poin Diberikan
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedRoom.issue && (
-                  <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-500/10 rounded-2xl">
-                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-red-700 dark:text-red-300 text-sm">
-                        Terdeteksi Masalah
-                      </p>
-                      <p className="text-red-600/80 dark:text-red-400/80 text-xs mt-1">
-                        {selectedRoom.issue}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <span className="text-xs text-gray-400 mb-1">Full</span>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full mt-2">
+                <div
+                  className={`h-full rounded-full ${data.metrics.storageLevel > 90 ? "bg-red-500" : "bg-blue-500"}`}
+                  style={{ width: `${data.metrics.storageLevel}%` }}
+                ></div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </motion.div>
 
-      {/* QR Code Modal */}
-      {selectedRoom && showQrModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl">
-            <div className="p-8 text-center">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">
-                Device QR Code
-              </h3>
+        {/* Column 2: Device Health & Details */}
+        <motion.div variants={item} className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-gray-500" />
+              Device Diagnostics
+            </h3>
 
-              <div className="bg-white p-4 rounded-2xl shadow-inner inline-block mb-6 border border-slate-100">
-                <QRCodeCanvas
-                  value={`${window.location.origin}/room/${selectedRoom.code}`}
-                  size={200}
-                  level="H"
-                />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Location
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {data.device.location}
+                </span>
               </div>
-
-              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 mb-6">
-                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">
-                  Room Code
-                </p>
-                <p className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400 tracking-widest">
-                  {selectedRoom.code}
-                </p>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <Wifi className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    IP Address
+                  </span>
+                </div>
+                <span className="text-sm font-mono text-gray-500">
+                  {data.device.ipAddress}
+                </span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    const canvas = document.querySelector("canvas");
-                    if (canvas) {
-                      const link = document.createElement("a");
-                      link.download = `qr-${selectedRoom.code}.png`;
-                      link.href = canvas.toDataURL();
-                      link.click();
-                    }
-                  }}
-                  className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm transition-colors"
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <Terminal className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Firmware
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {data.device.firmware}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <Activity className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    CPU Temp
+                  </span>
+                </div>
+                <span
+                  className={`text-sm font-medium ${data.device.temperature > 60 ? "text-red-500" : "text-emerald-500"}`}
                 >
-                  Download
+                  {data.device.temperature}°C
+                </span>
+              </div>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Uptime
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {data.device.uptime}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Maintenance Mode Toggle - Visual Only */}
+          <div className="bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-bold text-yellow-800 dark:text-yellow-400">
+                  Maintenance Mode
+                </h4>
+                <p className="text-xs text-yellow-700 dark:text-yellow-500/80 mt-1">
+                  Device is operating normally. Unauthorized physical access
+                  detected will trigger lockdown.
+                </p>
+                <button className="mt-3 text-xs font-semibold text-yellow-800 dark:text-yellow-400 hover:underline">
+                  Configure Security &rarr;
                 </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Column 3: Live Logs */}
+        <motion.div variants={item} className="lg:col-span-1">
+          <div className="bg-gray-900 text-gray-200 rounded-xl shadow-lg border border-gray-700 overflow-hidden h-[500px] flex flex-col">
+            <div className="p-3 bg-gray-950 border-b border-gray-800 flex items-center justify-between">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                <Terminal className="w-3 h-3" /> System Logs
+              </h3>
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50"></div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+              {data.logs.map((log) => (
+                <div key={log.id} className="flex gap-3">
+                  <div className="text-gray-500 shrink-0">
+                    [
+                    {new Date(log.timestamp).toLocaleTimeString("id-ID", {
+                      hour12: false,
+                    })}
+                    ]
+                  </div>
+                  <div
+                    className={`${
+                      log.type === "error"
+                        ? "text-red-400"
+                        : log.type === "warning"
+                          ? "text-yellow-400"
+                          : log.type === "success"
+                            ? "text-green-400"
+                            : "text-blue-300"
+                    }`}
+                  >
+                    <span className="font-bold uppercase mr-2 text-[10px] border border-current px-1 rounded-sm opacity-70">
+                      {log.type}
+                    </span>
+                    {log.message}
+                  </div>
+                </div>
+              ))}
+              {data.logs.length === 0 && (
+                <div className="text-gray-600 italic">
+                  No logs generated yet...
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* QR Code Modal for Device Pairing */}
+      <AnimatePresence>
+        {showQrModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full mx-4 overflow-hidden"
+            >
+              <div className="relative">
                 <button
                   onClick={() => setShowQrModal(false)}
-                  className="py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium text-sm transition-colors"
+                  className="absolute top-4 right-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                 >
-                  Tutup
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <QrCode className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Device Pairing
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
+                    Scan this generic provisioning code to connect any new
+                    hardware to this dashboard channel.
+                  </p>
+
+                  <div className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 inline-block mb-6 shadow-xs">
+                    <QRCodeSVG
+                      value={JSON.stringify({
+                        server: window.location.origin,
+                        action: "provision",
+                        channel: "admin-main",
+                      })}
+                      size={180}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <p className="text-xs text-gray-400">
+                      Code: {data.device.code}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

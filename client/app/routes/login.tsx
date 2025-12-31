@@ -79,7 +79,7 @@ export default function Login() {
       {/* Left Side - Visuals */}
       <div className="lg:w-1/2 relative bg-gray-900 hidden lg:flex flex-col justify-between p-12 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/hero-new.png')] bg-cover bg-center opacity-40"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-gray-900/50 to-gray-900/20"></div>
+        <div className="absolute inset-0 bg-linear-to-t from-emerald-900/90 via-gray-900/50 to-gray-900/20"></div>
 
         <div className="relative z-10 flex items-center gap-3">
           <img

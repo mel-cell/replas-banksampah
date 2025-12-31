@@ -16,6 +16,7 @@ import {
   Loader2,
   UserCheck,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface User {
   id: string;
@@ -286,7 +287,7 @@ export default function ManageUsers() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-6 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+        <div className="rounded-2xl bg-linear-to-br from-blue-500 to-indigo-600 p-6 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
             <Users className="w-24 h-24" />
           </div>
@@ -440,103 +441,109 @@ export default function ManageUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                {paginatedUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="hover:bg-gray-50/80 dark:hover:bg-slate-700/30 transition-colors group"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800">
-                          {user.fullname.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            {user.fullname}
+                <AnimatePresence>
+                  {paginatedUsers.map((user, index) => (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      className="hover:bg-gray-50/80 dark:hover:bg-slate-700/30 transition-colors group"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-linear-to-tr from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800">
+                            {user.fullname.charAt(0)}
                           </div>
-                          <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" /> Joined{" "}
-                            {new Date(user.createdAt).toLocaleDateString(
-                              "id-ID",
-                              { month: "short", year: "numeric" }
-                            )}
+                          <div>
+                            <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                              {user.fullname}
+                            </div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                              <Calendar className="w-3 h-3" /> Joined{" "}
+                              {new Date(user.createdAt).toLocaleDateString(
+                                "id-ID",
+                                { month: "short", year: "numeric" }
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col items-start gap-1.5">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                            user.role === "admin"
-                              ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800"
-                              : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
-                          }`}
-                        >
-                          {user.role}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className={`w-2 h-2 rounded-full ${user.isActive ? "bg-emerald-500" : "bg-gray-300"}`}
-                          />
-                          <span className="text-xs text-gray-600 dark:text-gray-400">
-                            {user.isActive ? "Aktif" : "Nonaktif"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                              user.role === "admin"
+                                ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800"
+                                : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
+                            }`}
+                          >
+                            {user.role}
                           </span>
+                          <div className="flex items-center gap-1.5">
+                            <div
+                              className={`w-2 h-2 rounded-full ${user.isActive ? "bg-emerald-500" : "bg-gray-300"}`}
+                            />
+                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                              {user.isActive ? "Aktif" : "Nonaktif"}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                          <Mail className="w-3.5 h-3.5 text-gray-400" />
-                          {user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            <Mail className="w-3.5 h-3.5 text-gray-400" />
+                            {user.email}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            <Phone className="w-3.5 h-3.5 text-gray-400" />
+                            {user.phone || "-"}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                          <Phone className="w-3.5 h-3.5 text-gray-400" />
-                          {user.phone || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {user.totalBottles.toLocaleString()}{" "}
+                            <span className="text-xs font-normal text-gray-500">
+                              botol
+                            </span>
+                          </div>
+                          <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded inline-block">
+                            {user.pointsBalance.toLocaleString()} Poin
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {user.totalBottles.toLocaleString()}{" "}
-                          <span className="text-xs font-normal text-gray-500">
-                            botol
-                          </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleViewUser(user)}
+                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Detail"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                        <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded inline-block">
-                          {user.pointsBalance.toLocaleString()} Poin
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleViewUser(user)}
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Detail"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleEditUser(user)}
-                          className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
@@ -584,7 +591,7 @@ export default function ManageUsers() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 dark:border-slate-700">
             {/* Modal Header */}
-            <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white overflow-hidden">
+            <div className="relative bg-linear-to-r from-blue-600 to-indigo-600 p-6 text-white overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
                 <Users className="w-32 h-32" />
               </div>

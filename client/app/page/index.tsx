@@ -38,7 +38,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-400/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-400/20 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/4"></div>
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -59,7 +59,7 @@ export default function Home() {
                     i < 2 ? (
                       <span
                         key={i}
-                        className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500"
+                        className="text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-teal-500"
                       >
                         {word}{" "}
                       </span>
@@ -88,7 +88,7 @@ export default function Home() {
 
             {/* Hero Image */}
             <div className="lg:w-1/2 relative group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 rounded-[2.5rem] blur-2xl transform rotate-3 scale-95 group-hover:rotate-1 group-hover:scale-100 transition-all duration-700 opacity-70"></div>
+              <div className="absolute inset-0 bg-linear-to-tr from-emerald-500/20 to-blue-500/20 rounded-[2.5rem] blur-2xl transform rotate-3 scale-95 group-hover:rotate-1 group-hover:scale-100 transition-all duration-700 opacity-70"></div>
               <img
                 src="/hero-new.png"
                 alt="Smart Recycling City"
@@ -213,7 +213,7 @@ export default function Home() {
                     key={i}
                     className="flex items-center gap-3 text-gray-700 dark:text-gray-200"
                   >
-                    <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-600 flex items-center justify-center flex-shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-600 flex items-center justify-center shrink-0">
                       ✓
                     </div>
                     <span>Smart waste management analytics</span>
@@ -243,7 +243,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="w-full md:w-1/2">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white dark:border-gray-800 bg-gradient-to-br from-purple-500 to-indigo-600 p-1">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white dark:border-gray-800 bg-linear-to-br from-purple-500 to-indigo-600 p-1">
                 <div className="bg-gray-900 rounded-[1.2rem] overflow-hidden relative h-[400px] flex items-center justify-center group">
                   <div className="absolute inset-0 bg-[url('/city.webp')] opacity-50 bg-cover bg-center"></div>
                   <div className="relative z-10 text-center p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 m-8 transform group-hover:-translate-y-2 transition-transform">
@@ -278,7 +278,7 @@ export default function Home() {
 
           <div className="grid md:grid-cols-4 gap-8 relative">
             {/* Connecting Line (Desktop) */}
-            <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-200 via-blue-200 to-emerald-200 dark:from-emerald-800 dark:to-emerald-800 -z-10"></div>
+            <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-linear-to-r from-emerald-200 via-blue-200 to-emerald-200 dark:from-emerald-800 dark:to-emerald-800 -z-10"></div>
 
             {[
               {
@@ -325,7 +325,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-emerald-900 to-gray-900 text-white relative overflow-hidden">
+      <section className="py-24 bg-linear-to-br from-emerald-900 to-gray-900 text-white relative overflow-hidden">
         <div className="absolute w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[100px] -top-1/2 -left-1/4"></div>
         <div className="absolute w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[80px] -bottom-1/2 -right-1/4"></div>
 

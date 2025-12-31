@@ -311,7 +311,7 @@ export default function ConversionPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-2">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-emerald-400 to-green-600 rounded-2xl shadow-lg shadow-emerald-500/20 text-white">
+            <div className="p-3 bg-linear-to-br from-emerald-400 to-green-600 rounded-2xl shadow-lg shadow-emerald-500/20 text-white">
               <ArrowRightLeft className="w-8 h-8" />
             </div>
             Tukar Poin
@@ -321,7 +321,7 @@ export default function ConversionPage() {
           </p>
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 shadow-2xl ring-1 ring-white/10">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-gray-900 to-gray-800 text-white p-6 shadow-2xl ring-1 ring-white/10">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <ArrowRightLeft className="w-32 h-32" />
           </div>
@@ -508,7 +508,7 @@ export default function ConversionPage() {
                   <Button
                     type="submit"
                     disabled={isSubmitting || currentPoints === 0}
-                    className="w-full h-12 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.01] active:scale-[0.98]"
+                    className="w-full h-12 bg-linear-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.01] active:scale-[0.98]"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2">

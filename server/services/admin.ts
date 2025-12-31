@@ -32,8 +32,8 @@ admin.get("/exchange-rate", async (c) => {
   if (!rate) {
     return c.json({
       pointsPerBottle: 1,
-      rupiahPerPoint: 75.00,
-      message: "Using default rates"
+      rupiahPerPoint: 75.0,
+      message: "Using default rates",
     });
   }
 
@@ -116,7 +116,10 @@ admin.get("/conversion-requests", async (c) => {
       },
     })
     .from(schema.conversionRequests)
-    .leftJoin(schema.users, eq(schema.conversionRequests.userId, schema.users.id))
+    .leftJoin(
+      schema.users,
+      eq(schema.conversionRequests.userId, schema.users.id)
+    )
     .leftJoin(
       schema.paymentMethod,
       eq(schema.conversionRequests.methodId, schema.paymentMethod.id)
@@ -124,7 +127,7 @@ admin.get("/conversion-requests", async (c) => {
     .orderBy(desc(schema.conversionRequests.requestAt));
 
   return c.json({
-    requests: requests.map(req => ({
+    requests: requests.map((req) => ({
       ...req,
       moneyAmount: parseFloat(req.moneyAmount),
     })),
@@ -228,14 +231,32 @@ admin.get("/exchange-rate-history", async (c) => {
       },
     })
     .from(schema.exchangeRateSettings)
-    .leftJoin(schema.users, eq(schema.exchangeRateSettings.updatedBy, schema.users.id))
+    .leftJoin(
+      schema.users,
+      eq(schema.exchangeRateSettings.updatedBy, schema.users.id)
+    )
     .orderBy(desc(schema.exchangeRateSettings.createdAt));
 
   return c.json({
-    history: history.map(item => ({
+    history: history.map((item) => ({
       ...item,
       rupiahPerPoint: parseFloat(item.rupiahPerPoint),
     })),
+  });
+});
+
+import { mqttService } from "./mqtt";
+
+// ... previous code ...
+
+// Get system status (MQTT connection)
+admin.get("/system-status", async (c) => {
+  return c.json({
+    mqtt: {
+      connected: mqttService.isConnected(),
+      broker: "mqtt://103.144.209.103",
+    },
+    systemTime: new Date().toISOString(),
   });
 });
 

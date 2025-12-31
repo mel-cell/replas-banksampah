@@ -34,7 +34,7 @@ export default function About() {
       {/* Hero Section */}
       <section className="relative py-32 overflow-hidden">
         <div className="absolute inset-0 bg-stone-100 dark:bg-gray-900">
-          <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[40px_40px]"></div>
           <div className="absolute top-0 left-1/2 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
         </div>
 
@@ -44,7 +44,7 @@ export default function About() {
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white mb-8 tracking-tight leading-tight">
             Redefining{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-500 to-teal-400">
               Recycling
             </span>{" "}
             for a <br className="hidden md:block" /> Better Tomorrow.
@@ -65,7 +65,7 @@ export default function About() {
               alt="Replas Team Vision"
               className="w-full object-cover max-h-[600px] transform hover:scale-105 transition-transform duration-1000 ease-out"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-8 md:p-16">
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex items-end p-8 md:p-16">
               <div className="max-w-3xl text-white">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
                   {t("about.intro")}
@@ -174,7 +174,7 @@ export default function About() {
                 alt="Impact"
                 className="w-full h-full object-cover filter brightness-75 hover:brightness-100 transition-all duration-700"
               />
-              <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black via-black/50 to-transparent text-white">
+              <div className="absolute bottom-0 left-0 w-full p-8 bg-linear-to-t from-black via-black/50 to-transparent text-white">
                 <p className="font-bold text-lg">Jakarta Smart City Project</p>
                 <p className="text-sm opacity-80">Pilot Program 2024</p>
               </div>
@@ -197,7 +197,7 @@ export default function About() {
                     key={i}
                     className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-default"
                   >
-                    <CheckCircle className="w-6 h-6 text-emerald-500 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-emerald-500 mt-1 shrink-0" />
                     <span className="text-gray-700 dark:text-gray-300 font-medium">
                       {item}
                     </span>
@@ -212,7 +212,7 @@ export default function About() {
       {/* CTA */}
       <section className="py-24">
         <div className="container mx-auto px-4 text-center">
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-500 rounded-[3rem] p-12 md:p-24 text-white shadow-2xl relative overflow-hidden">
+          <div className="bg-linear-to-r from-emerald-600 to-teal-500 rounded-[3rem] p-12 md:p-24 text-white shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-3xl -ml-16 -mb-16"></div>
 

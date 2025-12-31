@@ -262,7 +262,7 @@ export default function StudentProfile() {
             <p className="text-red-600 dark:text-red-400">{error}</p>
           </div>
           <button
-            onClick={loadDashboardData}
+            onClick={() => loadDashboardData()}
             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
           >
             Coba Lagi
@@ -288,7 +288,7 @@ export default function StudentProfile() {
   return (
     <div className="space-y-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
       {/* Welcome Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-900 dark:to-teal-900 p-8 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-900 dark:to-teal-900 p-8 text-white shadow-2xl">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl"></div>
 
@@ -468,7 +468,7 @@ export default function StudentProfile() {
           </div>
 
           {/* Info Card - Optional */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white shadow-xl relative overflow-hidden">
+          <div className="rounded-3xl bg-linear-to-br from-indigo-500 to-purple-600 p-6 text-white shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
             <BookOpen className="w-10 h-10 text-indigo-100 mb-4 bg-white/10 p-2 rounded-xl backdrop-blur-md" />
             <h3 className="text-xl font-bold mb-2">Panduan Pengguna</h3>
@@ -568,7 +568,7 @@ export default function StudentProfile() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
             <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-700 bg-red-50/50 dark:bg-red-900/10 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white text-red-600 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
                 <Shield className="w-5 h-5" /> Ubah Password
               </h3>
               <button

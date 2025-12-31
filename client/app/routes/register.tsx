@@ -93,7 +93,7 @@ export default function Register() {
       {/* Right Side - Visuals (Swapped for Register: Image Right) */}
       <div className="lg:w-1/2 relative bg-emerald-900 hidden lg:flex flex-col justify-between p-12 overflow-hidden order-last">
         <div className="absolute inset-0 bg-[url('/about-team.png')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-900/40 to-emerald-900/20"></div>
+        <div className="absolute inset-0 bg-linear-to-t from-emerald-900/90 via-emerald-900/40 to-emerald-900/20"></div>
 
         <div className="relative z-10 flex justify-end">
           <div className="flex items-center gap-3">

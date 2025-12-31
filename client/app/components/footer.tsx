@@ -55,7 +55,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300 dark:bg-black dark:text-gray-400 relative overflow-hidden font-sans border-t border-gray-800">
       {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">

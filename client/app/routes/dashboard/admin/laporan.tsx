@@ -5,24 +5,25 @@ import {
   DollarSign,
   Calendar,
   RefreshCw,
-  Filter,
+  // Filter, // Unused
   Eye,
   Clock,
   Package,
   Recycle,
   BarChart3,
   PieChart,
-  Users,
+  // Users, // Unused
   Scale,
-  Truck,
+  // Truck, // Unused
   Plus,
   Edit,
   Trash2,
   X,
   Save,
-  Loader2,
-  AlertCircle,
+  // Loader2, // Unused
+  // AlertCircle, // Unused
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SalesReport {
   id: string;
@@ -42,22 +43,24 @@ export default function LaporanPenjualanSampah() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<SalesReport | null>(null);
+  const [selectedReport, setSelectedReport] = useState<SalesReport | null>(
+    null
+  );
   const [formData, setFormData] = useState({
-    saleDate: new Date().toISOString().split('T')[0],
-    totalBottles: '',
-    totalAmount: '',
-    notes: '',
+    saleDate: new Date().toISOString().split("T")[0],
+    totalBottles: "",
+    totalAmount: "",
+    notes: "",
   });
 
   const loadReports = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/web/dashboard/admin/sales-reports", {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -65,10 +68,10 @@ export default function LaporanPenjualanSampah() {
         const data = await response.json();
         setReports(data.reports);
       } else {
-        setError('Failed to load sales reports');
+        setError("Failed to load sales reports");
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -78,18 +81,24 @@ export default function LaporanPenjualanSampah() {
     loadReports();
   }, []);
 
-  const totalRevenue = reports.reduce((sum, report) => sum + parseFloat(report.totalAmount), 0);
-  const totalBottles = reports.reduce((sum, report) => sum + report.totalBottles, 0);
+  const totalRevenue = reports.reduce(
+    (sum, report) => sum + parseFloat(report.totalAmount),
+    0
+  );
+  const totalBottles = reports.reduce(
+    (sum, report) => sum + report.totalBottles,
+    0
+  );
 
   const handleCreateReport = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/web/dashboard/admin/sales-reports", {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           saleDate: formData.saleDate,
@@ -100,30 +109,30 @@ export default function LaporanPenjualanSampah() {
       });
 
       if (response.ok) {
-        alert('Laporan penjualan berhasil dibuat!');
+        alert("Laporan penjualan berhasil dibuat!");
         setShowCreateModal(false);
         setFormData({
-          saleDate: new Date().toISOString().split('T')[0],
-          totalBottles: '',
-          totalAmount: '',
-          notes: '',
+          saleDate: new Date().toISOString().split("T")[0],
+          totalBottles: "",
+          totalAmount: "",
+          notes: "",
         });
         await loadReports();
       } else {
-        alert('Failed to create sales report');
+        alert("Failed to create sales report");
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert("Network error. Please try again.");
     }
   };
 
   const handleEditReport = (report: SalesReport) => {
     setSelectedReport(report);
     setFormData({
-      saleDate: new Date(report.saleDate).toISOString().split('T')[0],
+      saleDate: new Date(report.saleDate).toISOString().split("T")[0],
       totalBottles: report.totalBottles.toString(),
       totalAmount: report.totalAmount,
-      notes: report.notes || '',
+      notes: report.notes || "",
     });
     setShowEditModal(true);
   };
@@ -133,53 +142,59 @@ export default function LaporanPenjualanSampah() {
     if (!selectedReport) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch("/api/web/dashboard/admin/sales-reports/${selectedReport.id}", {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          saleDate: formData.saleDate,
-          totalBottles: parseInt(formData.totalBottles),
-          totalAmount: parseFloat(formData.totalAmount),
-          notes: formData.notes,
-        }),
-      });
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `/api/web/dashboard/admin/sales-reports/${selectedReport.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            saleDate: formData.saleDate,
+            totalBottles: parseInt(formData.totalBottles),
+            totalAmount: parseFloat(formData.totalAmount),
+            notes: formData.notes,
+          }),
+        }
+      );
 
       if (response.ok) {
-        alert('Laporan penjualan berhasil diupdate!');
+        alert("Laporan penjualan berhasil diupdate!");
         setShowEditModal(false);
         setSelectedReport(null);
         await loadReports();
       } else {
-        alert('Failed to update sales report');
+        alert("Failed to update sales report");
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert("Network error. Please try again.");
     }
   };
 
   const handleDeleteReport = async (reportId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus laporan penjualan ini?')) {
+    if (confirm("Apakah Anda yakin ingin menghapus laporan penjualan ini?")) {
       try {
-        const token = localStorage.getItem('token');
-      const response = await fetch("/api/web/dashboard/admin/sales-reports/${reportId}", {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `/api/web/dashboard/admin/sales-reports/${reportId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (response.ok) {
-          alert('Laporan penjualan berhasil dihapus!');
+          alert("Laporan penjualan berhasil dihapus!");
           await loadReports();
         } else {
-          alert('Failed to delete sales report');
+          alert("Failed to delete sales report");
         }
       } catch (err) {
-        alert('Network error. Please try again.');
+        alert("Network error. Please try again.");
       }
     }
   };
@@ -189,16 +204,38 @@ export default function LaporanPenjualanSampah() {
     setShowViewModal(true);
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in-0 duration-500">
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-8"
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="animate-in slide-in-from-left-4 duration-500">
+        <motion.div variants={item}>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
               <FileText className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
@@ -208,8 +245,8 @@ export default function LaporanPenjualanSampah() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Ringkasan penjualan dan pendapatan dari bank sampah
           </p>
-        </div>
-        <div className="flex items-center gap-3 animate-in slide-in-from-right-4 duration-500">
+        </motion.div>
+        <motion.div variants={item} className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
             <Clock className="w-4 h-4" />
             Last updated: {new Date().toLocaleTimeString("id-ID")}
@@ -223,11 +260,14 @@ export default function LaporanPenjualanSampah() {
               className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
             />
           </button>
-        </div>
+        </motion.div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between animate-in slide-in-from-bottom-4 duration-500 delay-100">
+      <motion.div
+        variants={item}
+        className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+      >
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Calendar className="w-4 h-4" />
@@ -243,11 +283,14 @@ export default function LaporanPenjualanSampah() {
             Tambah Laporan
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 animate-in fade-in-0">
+      <motion.div
+        variants={item}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -272,7 +315,7 @@ export default function LaporanPenjualanSampah() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 animate-in fade-in-0 delay-100">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -297,7 +340,7 @@ export default function LaporanPenjualanSampah() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 animate-in fade-in-0 delay-200">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -321,12 +364,15 @@ export default function LaporanPenjualanSampah() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <motion.div
+        variants={item}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
         {/* Revenue Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow animate-in slide-in-from-left-4 duration-500 delay-300">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-emerald-600" />
@@ -337,8 +383,8 @@ export default function LaporanPenjualanSampah() {
               Semua Waktu
             </div>
           </div>
-          <div className="h-64 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 animate-pulse"></div>
+          <div className="h-64 bg-linear-to-br from-emerald-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-linear-to-br from-emerald-500/10 to-green-500/10 animate-pulse"></div>
             <div className="text-center relative z-10">
               <BarChart3 className="w-12 h-12 text-emerald-600 mx-auto mb-2 animate-bounce" />
               <p className="text-gray-600 dark:text-gray-400 font-medium">
@@ -352,7 +398,7 @@ export default function LaporanPenjualanSampah() {
         </div>
 
         {/* Waste Type Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow animate-in slide-in-from-right-4 duration-500 delay-400">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <PieChart className="w-5 h-5 text-blue-600" />
@@ -363,8 +409,8 @@ export default function LaporanPenjualanSampah() {
               Berdasarkan Penjualan
             </div>
           </div>
-          <div className="h-64 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 animate-pulse"></div>
+          <div className="h-64 bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-indigo-500/10 animate-pulse"></div>
             <div className="text-center relative z-10">
               <PieChart className="w-12 h-12 text-blue-600 mx-auto mb-2 animate-bounce" />
               <p className="text-gray-600 dark:text-gray-400 font-medium">
@@ -376,10 +422,13 @@ export default function LaporanPenjualanSampah() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Sales Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-4 duration-500 delay-500">
+      <motion.div
+        variants={item}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+      >
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -413,50 +462,57 @@ export default function LaporanPenjualanSampah() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {reports.map((report) => (
-                <tr
-                  key={report.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {new Date(report.saleDate).toLocaleDateString('id-ID')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {report.totalBottles.toLocaleString()} botol
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    Rp {parseFloat(report.totalAmount).toLocaleString('id-ID')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {report.adminName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleViewReport(report)}
-                        className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                        title="Lihat Detail"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEditReport(report)}
-                        className="p-1 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteReport(report.id)}
-                        className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              <AnimatePresence>
+                {reports.map((report, index) => (
+                  <motion.tr
+                    key={report.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {new Date(report.saleDate).toLocaleDateString("id-ID")}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {report.totalBottles.toLocaleString()} botol
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      Rp{" "}
+                      {parseFloat(report.totalAmount).toLocaleString("id-ID")}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {report.adminName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleViewReport(report)}
+                          className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          title="Lihat Detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditReport(report)}
+                          className="p-1 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReport(report.id)}
+                          className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
@@ -468,12 +524,16 @@ export default function LaporanPenjualanSampah() {
             </p>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4"
+          >
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -561,14 +621,18 @@ export default function LaporanPenjualanSampah() {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4"
+          >
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -656,14 +720,18 @@ export default function LaporanPenjualanSampah() {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* View Modal */}
       {showViewModal && selectedReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4"
+          >
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -685,7 +753,9 @@ export default function LaporanPenjualanSampah() {
                     Tanggal Penjualan
                   </label>
                   <p className="text-sm text-gray-900 dark:text-white">
-                    {new Date(selectedReport.saleDate).toLocaleDateString('id-ID')}
+                    {new Date(selectedReport.saleDate).toLocaleDateString(
+                      "id-ID"
+                    )}
                   </p>
                 </div>
                 <div>
@@ -711,7 +781,10 @@ export default function LaporanPenjualanSampah() {
                     Total Pendapatan
                   </label>
                   <p className="text-sm text-gray-900 dark:text-white">
-                    Rp {parseFloat(selectedReport.totalAmount).toLocaleString('id-ID')}
+                    Rp{" "}
+                    {parseFloat(selectedReport.totalAmount).toLocaleString(
+                      "id-ID"
+                    )}
                   </p>
                 </div>
               </div>
@@ -720,7 +793,7 @@ export default function LaporanPenjualanSampah() {
                   Catatan
                 </label>
                 <p className="text-sm text-gray-900 dark:text-white">
-                  {selectedReport.notes || 'Tidak ada catatan'}
+                  {selectedReport.notes || "Tidak ada catatan"}
                 </p>
               </div>
               <div>
@@ -728,13 +801,13 @@ export default function LaporanPenjualanSampah() {
                   Dibuat Pada
                 </label>
                 <p className="text-sm text-gray-500">
-                  {new Date(selectedReport.createdAt).toLocaleString('id-ID')}
+                  {new Date(selectedReport.createdAt).toLocaleString("id-ID")}
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
