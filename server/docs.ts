@@ -9,27 +9,27 @@ const openAPISpec = {
   info: {
     title: "Replas API",
     version: "1.0.0",
-    description: "API documentation for Replas - Recycle to E-Money platform"
+    description: "API documentation for Replas - Recycle to E-Money platform",
   },
   servers: [
     {
       url: "http://localhost:3000",
-      description: "Development server"
-    }
+      description: "Development server",
+    },
   ],
   security: [
     {
-      bearerAuth: []
-    }
+      bearerAuth: [],
+    },
   ],
   components: {
     securitySchemes: {
       bearerAuth: {
         type: "http",
         scheme: "bearer",
-        bearerFormat: "JWT"
-      }
-    }
+        bearerFormat: "JWT",
+      },
+    },
   },
   paths: {
     "/api/auth/login": {
@@ -47,19 +47,19 @@ const openAPISpec = {
                     type: "string",
                     format: "email",
                     description: "User email address",
-                    example: "user@example.com"
+                    example: "user@example.com",
                   },
                   password: {
                     type: "string",
                     format: "password",
                     description: "User password",
-                    example: "password123"
-                  }
+                    example: "password123",
+                  },
                 },
-                required: ["email", "password"]
-              }
-            }
-          }
+                required: ["email", "password"],
+              },
+            },
+          },
         },
         responses: {
           200: {
@@ -76,13 +76,13 @@ const openAPISpec = {
                         id: { type: "string" },
                         name: { type: "string" },
                         email: { type: "string" },
-                        role: { type: "string" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                        role: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           401: {
             description: "Invalid credentials",
@@ -91,14 +91,14 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     "/api/auth/register": {
       post: {
@@ -114,31 +114,31 @@ const openAPISpec = {
                   name: {
                     type: "string",
                     description: "Full name",
-                    example: "John Doe"
+                    example: "John Doe",
                   },
                   email: {
                     type: "string",
                     format: "email",
                     description: "Email address",
-                    example: "john@example.com"
+                    example: "john@example.com",
                   },
                   password: {
                     type: "string",
                     format: "password",
                     description: "Password (min 6 characters)",
-                    example: "password123"
+                    example: "password123",
                   },
                   role: {
                     type: "string",
                     enum: ["user", "admin"],
                     description: "User role",
-                    example: "user"
-                  }
+                    example: "user",
+                  },
                 },
-                required: ["name", "email", "password"]
-              }
-            }
-          }
+                required: ["name", "email", "password"],
+              },
+            },
+          },
         },
         responses: {
           201: {
@@ -155,13 +155,13 @@ const openAPISpec = {
                         id: { type: "string" },
                         name: { type: "string" },
                         email: { type: "string" },
-                        role: { type: "string" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                        role: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           400: {
             description: "Validation error",
@@ -170,19 +170,20 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     "/api/iot/activate": {
       post: {
         summary: "Activate IoT machine session",
-        description: "Activate a machine for bottle collection session. Requires authentication.",
+        description:
+          "Activate a machine for bottle collection session. Requires authentication.",
         tags: ["IoT"],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -194,13 +195,13 @@ const openAPISpec = {
                   machineId: {
                     type: "string",
                     description: "Machine code (e.g., 'banksampah01')",
-                    example: "banksampah01"
-                  }
+                    example: "banksampah01",
+                  },
                 },
-                required: ["machineId"]
-              }
-            }
-          }
+                required: ["machineId"],
+              },
+            },
+          },
         },
         responses: {
           200: {
@@ -214,11 +215,11 @@ const openAPISpec = {
                     machine: { type: "object" },
                     sessionId: { type: "string" },
                     activatedAt: { type: "string" },
-                    mqttConnected: { type: "boolean" }
-                  }
-                }
-              }
-            }
+                    mqttConnected: { type: "boolean" },
+                  },
+                },
+              },
+            },
           },
           400: {
             description: "Bad request - machine in use or invalid",
@@ -227,11 +228,11 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
           },
           401: {
             description: "Unauthorized",
@@ -240,11 +241,11 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
           },
           404: {
             description: "User or machine not found",
@@ -253,11 +254,11 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
           },
           503: {
             description: "IoT service unavailable",
@@ -267,19 +268,20 @@ const openAPISpec = {
                   type: "object",
                   properties: {
                     error: { type: "string" },
-                    details: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    details: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     "/api/iot/session-end": {
       post: {
         summary: "End IoT machine session",
-        description: "Manually end a bottle collection session and calculate points",
+        description:
+          "Manually end a bottle collection session and calculate points",
         tags: ["IoT"],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -291,18 +293,18 @@ const openAPISpec = {
                   machineId: {
                     type: "string",
                     description: "Machine code",
-                    example: "banksampah01"
+                    example: "banksampah01",
                   },
                   totalBottles: {
                     type: "number",
                     description: "Total bottles collected",
-                    example: 5
-                  }
+                    example: 5,
+                  },
                 },
-                required: ["machineId", "totalBottles"]
-              }
-            }
-          }
+                required: ["machineId", "totalBottles"],
+              },
+            },
+          },
         },
         responses: {
           200: {
@@ -316,11 +318,11 @@ const openAPISpec = {
                     points: { type: "number" },
                     newBalance: { type: "number" },
                     machine: { type: "object" },
-                    endedAt: { type: "string" }
-                  }
-                }
-              }
-            }
+                    endedAt: { type: "string" },
+                  },
+                },
+              },
+            },
           },
           401: {
             description: "Unauthorized",
@@ -329,11 +331,11 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
           },
           404: {
             description: "Machine not found",
@@ -342,14 +344,14 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     "/api/iot/status": {
       get: {
@@ -365,14 +367,14 @@ const openAPISpec = {
                   type: "object",
                   properties: {
                     mqttConnected: { type: "boolean" },
-                    timestamp: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    timestamp: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     "/api/web/profile": {
       get: {
@@ -389,11 +391,11 @@ const openAPISpec = {
                   type: "object",
                   properties: {
                     user: { type: "object" },
-                    wallet: { type: "object" }
-                  }
-                }
-              }
-            }
+                    wallet: { type: "object" },
+                  },
+                },
+              },
+            },
           },
           401: {
             description: "Unauthorized",
@@ -402,13 +404,13 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       put: {
         summary: "Update user profile",
@@ -423,11 +425,11 @@ const openAPISpec = {
                 properties: {
                   name: { type: "string" },
                   email: { type: "string" },
-                  phone: { type: "string" }
-                }
-              }
-            }
-          }
+                  phone: { type: "string" },
+                },
+              },
+            },
+          },
         },
         responses: {
           200: {
@@ -438,11 +440,11 @@ const openAPISpec = {
                   type: "object",
                   properties: {
                     message: { type: "string" },
-                    user: { type: "object" }
-                  }
-                }
-              }
-            }
+                    user: { type: "object" },
+                  },
+                },
+              },
+            },
           },
           401: {
             description: "Unauthorized",
@@ -451,16 +453,16 @@ const openAPISpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    error: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 // Routes for API documentation
@@ -469,10 +471,13 @@ docs.get("/openapi.json", (c) => {
 });
 
 // Swagger UI
-docs.get("/docs", swaggerUI({
-  url: "/docs/openapi.json",
-  title: "Replas API Documentation"
-}));
+docs.get(
+  "/ui",
+  swaggerUI({
+    url: "/api/docs/openapi.json",
+    title: "Replas API Documentation",
+  })
+);
 
 // Scalar API Reference (alternative modern UI)
 docs.get("/scalar", (c) => {

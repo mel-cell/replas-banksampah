@@ -1,155 +1,171 @@
 import React, { useContext } from "react";
 import { Link } from "react-router";
-import { LanguageContext } from "../root"; // Sesuaikan path ini jika perlu
+import { LanguageContext } from "../root";
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+} from "lucide-react";
 
 // Define translations for Footer component
 const translations = {
   id: {
-    footerTagline: "Mengubah sampah menjadi peluang.",
+    footerTagline:
+      "Mengubah sampah menjadi peluang digital untuk masa depan yang lebih hijau.",
     footerLinks: "Tautan Cepat",
-    footerLegal: "Legal",
+    footerLegal: "Legal & Privasi",
     privacy: "Kebijakan Privasi",
     terms: "Syarat & Ketentuan",
-    footerContact: "Kontak Kami",
+    footerContact: "Hubungi Kami",
+    newsletterTitle: "Berlangganan Newsletter",
+    newsletterDesc:
+      "Dapatkan update terbaru tentang fitur dan tips daur ulang.",
     copyright: "© 2025 Replas. Semua hak cipta dilindungi.",
   },
   en: {
-    footerTagline: "Turning trash into opportunities.",
+    footerTagline:
+      "Turning waste into digital opportunities for a greener future.",
     footerLinks: "Quick Links",
-    footerLegal: "Legal",
+    footerLegal: "Legal & Privacy",
     privacy: "Privacy Policy",
     terms: "Terms & Conditions",
     footerContact: "Contact Us",
+    newsletterTitle: "Subscribe to Newsletter",
+    newsletterDesc: "Get the latest updates on features and recycling tips.",
     copyright: "© 2025 Replas. All rights reserved.",
   },
 };
 
-// Type-safe keys for translations
-type StringKey =
-  | "footerTagline"
-  | "footerLinks"
-  | "footerLegal"
-  | "privacy"
-  | "terms"
-  | "footerContact"
-  | "copyright";
+type StringKey = keyof typeof translations.en;
 
 export default function Footer() {
   const { lang } = useContext(LanguageContext);
 
-  // Type-safe translation function
   const t = (key: StringKey): string => {
-    const currentLang = translations[lang] ? lang : "en"; // Fallback to 'en'
-    return translations[currentLang] && translations[currentLang][key]
-      ? (translations[currentLang][key] as string)
-      : key;
-  };
-
-  const transactions = {
-    id: {
-      // Footer
-      footerTagline:
-        "Recycle To E-Money - Membuat keberlanjutan menguntungkan.",
-      footerLinks: "Tautan",
-      footerLegal: "Hukum",
-      footerContact: "Kontak",
-      privacy: "Privasi",
-      terms: "Syarat",
-      copyright: "© 2024 Replas. Semua hak dilindungi.",
-    },
-    en: {
-      // Footer
-      footerTagline: "Recycle To E-Money - Making sustainability profitable.",
-      footerLinks: "Links",
-      footerLegal: "Legal",
-      footerContact: "Contact",
-      privacy: "Privacy",
-      terms: "Terms",
-      copyright: "© 2024 Replas. All rights reserved.",
-    },
+    const currentLang = translations[lang] ? lang : "en";
+    // @ts-ignore
+    return translations[currentLang][key] || key;
   };
 
   return (
-    <footer className="bg-muted text-muted-foreground py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-4 gap-8">
-          <div>
-            <div className="flex items-center mb-4">
+    <footer className="bg-gray-900 text-gray-300 dark:bg-black dark:text-gray-400 relative overflow-hidden font-sans border-t border-gray-800">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+        <div className="grid lg:grid-cols-4 gap-12 lg:gap-8">
+          {/* Brand Column */}
+          <div className="lg:col-span-1">
+            <div className="flex items-center gap-3 mb-6">
               <img
                 src="/logo_3.webp"
                 alt="Replas Logo"
-                className="w-12 h-12 mr-2"
+                className="w-10 h-10 object-contain"
               />
-              <h3 className="text-xl font-bold">Replas</h3>
+              <span className="text-2xl font-bold text-white tracking-tight">
+                Replas
+              </span>
             </div>
-            <p className="text-muted-foreground">{t("footerTagline")}</p>
+            <p className="text-gray-400 leading-relaxed mb-6">
+              {t("footerTagline")}
+            </p>
+            <div className="flex gap-4">
+              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all duration-300"
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
+            </div>
           </div>
+
+          {/* Links Column */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">{t("footerLinks")}</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Beranda
-                </Link>
+            <h4 className="text-lg font-bold text-white mb-6 tracking-wide">
+              {t("footerLinks")}
+            </h4>
+            <ul className="space-y-3">
+              {[
+                { label: "Home", to: "/" },
+                { label: "About Us", to: "/about" },
+                { label: "Services", to: "/services" },
+                { label: "Contact", to: "/contact" },
+                { label: "Dashboard", to: "/login" },
+              ].map((link, i) => (
+                <li key={i}>
+                  <Link
+                    to={link.to}
+                    className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2 group"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-400 opacity-0 group-hover:opacity-100 transition-all"></span>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact Column */}
+          <div>
+            <h4 className="text-lg font-bold text-white mb-6 tracking-wide">
+              {t("footerContact")}
+            </h4>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-emerald-500 mt-1 shrink-0" />
+                <span className="text-gray-400 leading-tight">
+                  SMKN 6 Malang, Jl. Ki Ageng Gribig No. 28, Malang
+                </span>
               </li>
-              <li>
-                <Link
-                  to="/about"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Tentang
-                </Link>
+              <li className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-emerald-500 shrink-0" />
+                <span className="text-gray-400">+62 812-3456-7890</span>
               </li>
-              <li>
-                <Link
-                  to="/services"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Layanan
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/contact"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Kontak
-                </Link>
+              <li className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-emerald-500 shrink-0" />
+                <span className="text-gray-400">info@replas.id</span>
               </li>
             </ul>
           </div>
+
+          {/* Newsletter Column */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">{t("footerLegal")}</h4>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="#"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  {t("privacy")}
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  {t("terms")}
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-lg font-semibold mb-4">{t("footerContact")}</h4>
-            <p className="text-muted-foreground">Email: info@replas.com</p>
-            <p className="text-muted-foreground">Phone: +62 123 456 789</p>
+            <h4 className="text-lg font-bold text-white mb-6 tracking-wide">
+              {t("newsletterTitle")}
+            </h4>
+            <p className="text-gray-400 mb-4 text-sm">{t("newsletterDesc")}</p>
+            <div className="flex flex-col gap-3">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="bg-gray-800 border-none text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none w-full placeholder:text-gray-600"
+              />
+              <button className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-emerald-900/20">
+                Subscribe <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-        <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-          {t("copyright")}
+
+        <div className="border-t border-gray-800/50 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+          <p>{t("copyright")}</p>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-emerald-400 transition-colors">
+              {t("privacy")}
+            </a>
+            <a href="#" className="hover:text-emerald-400 transition-colors">
+              {t("terms")}
+            </a>
+          </div>
         </div>
       </div>
     </footer>
